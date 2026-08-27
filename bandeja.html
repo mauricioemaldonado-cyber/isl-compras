@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bandeja de Pedidos - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --naranja: #d97706;
+    --verde: #2e7d32;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+
+  .filtros {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .filtros div { display: flex; flex-direction: column; }
+  .filtros label { font-size: 12px; font-weight: 600; color: var(--gris); margin-bottom: 4px; }
+  .filtros select, .filtros input {
+    padding: 8px 10px;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .filtros button {
+    background: var(--azul-isl);
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  thead { background: var(--azul-isl); color: white; }
+  th, td { padding: 12px 14px; text-align: left; font-size: 13px; }
+  tbody tr { border-bottom: 1px solid #eee; cursor: pointer; }
+  tbody tr:hover { background: var(--azul-claro); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-urgente { background: #fdecea; color: var(--rojo); }
+  .badge-normal { background: #eaf6ea; color: var(--verde); }
+  .badge-nuevo { background: #fff4e5; color: var(--naranja); }
+  .badge-proceso { background: var(--azul-claro); color: var(--azul-isl); }
+
+  .vacio {
+    text-align: center;
+    padding: 40px;
+    color: var(--gris);
+    font-size: 14px;
+  }
+
+  /* Modal detalle */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .overlay.activo { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 22px;
+  }
+  .modal h2 { margin-top: 0; color: var(--azul-isl); font-size: 17px; }
+  .modal .campo { margin-bottom: 10px; font-size: 13px; }
+  .modal .campo strong { color: var(--gris); display: block; font-size: 11px; text-transform: uppercase; }
+  .modal table.items { width: 100%; margin-top: 10px; font-size: 13px; }
+  .modal table.items th, .modal table.items td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .modal-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .modal-acciones button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-oc { background: var(--azul-isl); color: white; }
+  .btn-pm { background: var(--naranja); color: white; }
+  .btn-cerrar { background: #eee; color: #333; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ISL · Gestor de Compras</h1>
+  <p>Bandeja de Pedidos — José Loaisa</p>
+</header>
+
+<div class="container">
+  <div class="filtros">
+    <div>
+      <label>Estado</label>
+      <select id="fEstado">
+        <option value="">Todos</option>
+        <option value="Nuevo">Nuevo</option>
+        <option value="En proceso">En proceso</option>
+        <option value="Con OC-PM">Con OC/PM</option>
+      </select>
+    </div>
+    <div>
+      <label>Urgencia</label>
+      <select id="fUrgencia">
+        <option value="">Todas</option>
+        <option value="Si">Urgente</option>
+        <option value="No">No urgente</option>
+      </select>
+    </div>
+    <button onclick="cargarPedidos()">Filtrar</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>N° Pedido</th>
+        <th>Fecha</th>
+        <th>Solicitante</th>
+        <th>Centro de costo</th>
+        <th>Urgencia</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="tbodyPedidos">
+      <tr><td colspan="6" class="vacio">Cargando pedidos...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="overlay" id="overlayDetalle">
+  <div class="modal" id="modalDetalle"></div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'PEGAR_AQUI_LA_URL_DEL_APPS_SCRIPT_DEPLOYADO';
+// ===================================================
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+function cargarPedidos() {
+  const tbody = document.getElementById('tbodyPedidos');
+  tbody.innerHTML = '<tr><td colspan="6" class="vacio">Cargando pedidos...</td></tr>';
+
+  const filtros = {
+    estado: document.getElementById('fEstado').value,
+    urgencia: document.getElementById('fUrgencia').value
+  };
+
+  llamarAPI({ action: 'listarPedidos', filtros: filtros }).then(res => {
+    if (!res.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vacio">Error al cargar: ' + res.error + '</td></tr>';
+      return;
+    }
+    if (res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vacio">No hay pedidos que coincidan con el filtro.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = res.data.map(p => `
+      <tr onclick="verDetalle('${p.ID_Pedido}')">
+        <td><strong>${p.ID_Pedido}</strong></td>
+        <td>${formatFecha(p.Fecha_Pedido)}</td>
+        <td>${p.Solicitante}</td>
+        <td>${p.Centro_Costo}</td>
+        <td><span class="badge ${p.Urgencia === 'Si' ? 'badge-urgente' : 'badge-normal'}">${p.Urgencia === 'Si' ? 'Urgente' : 'Normal'}</span></td>
+        <td><span class="badge ${p.Estado === 'Nuevo' ? 'badge-nuevo' : 'badge-proceso'}">${p.Estado}</span></td>
+      </tr>
+    `).join('');
+  });
+}
+
+function formatFecha(fechaStr) {
+  const d = new Date(fechaStr);
+  if (isNaN(d)) return fechaStr;
+  return d.toLocaleDateString('es-AR');
+}
+
+function verDetalle(idPedido) {
+  const modal = document.getElementById('modalDetalle');
+  modal.innerHTML = '<p>Cargando...</p>';
+  document.getElementById('overlayDetalle').classList.add('activo');
+
+  llamarAPI({ action: 'obtenerPedido', idPedido: idPedido }).then(res => {
+    if (!res.ok) {
+      modal.innerHTML = `<p>Error: ${res.error}</p><div class="modal-acciones"><button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button></div>`;
+      return;
+    }
+    const p = res.data.pedido;
+    const items = res.data.items;
+
+    modal.innerHTML = `
+      <h2>Pedido ${p.ID_Pedido}</h2>
+      <div class="campo"><strong>Solicitante</strong>${p.Solicitante}</div>
+      <div class="campo"><strong>Centro de costo</strong>${p.Centro_Costo} (${p.Tipo_CC})</div>
+      ${p.Item_Certificacion ? `<div class="campo"><strong>Ítem de certificación</strong>${p.Item_Certificacion}</div>` : ''}
+      ${p.Categoria_Gasto ? `<div class="campo"><strong>Categoría de gasto</strong>${p.Categoria_Gasto}</div>` : ''}
+      <div class="campo"><strong>Fecha de necesidad</strong>${formatFecha(p.Fecha_Necesidad)}</div>
+      <div class="campo"><strong>Urgencia</strong>${p.Urgencia === 'Si' ? 'Urgente' : 'Normal'}</div>
+      ${p.Observaciones ? `<div class="campo"><strong>Observaciones</strong>${p.Observaciones}</div>` : ''}
+
+      <table class="items">
+        <thead><tr><th>Descripción</th><th>Cant.</th><th>Unidad</th></tr></thead>
+        <tbody>
+          ${items.map(i => `<tr><td>${i.Descripcion}</td><td>${i.Cantidad}</td><td>${i.Unidad}</td></tr>`).join('')}
+        </tbody>
+      </table>
+
+      <div class="modal-acciones">
+        <button class="btn-oc" onclick="generarDocumento('${p.ID_Pedido}', 'OC')">Generar OC</button>
+        <button class="btn-pm" onclick="generarDocumento('${p.ID_Pedido}', 'PM')">Generar PM</button>
+      </div>
+      <div class="modal-acciones">
+        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    `;
+  });
+}
+
+function generarDocumento(idPedido, tipo) {
+  // Placeholder: acá se va a conectar con la Pantalla 3/4 (Armado de OC / PM)
+  // cuando se construyan. Por ahora solo actualiza el estado del pedido.
+  llamarAPI({ action: 'cambiarEstadoPedido', idPedido: idPedido, nuevoEstado: 'En proceso' }).then(res => {
+    if (res.ok) {
+      alert('Pedido marcado "En proceso". Próximo paso: pantalla de armado de ' + tipo + ' (a construir).');
+      cerrarModal();
+      cargarPedidos();
+    } else {
+      alert('Error: ' + res.error);
+    }
+  });
+}
+
+function cerrarModal() {
+  document.getElementById('overlayDetalle').classList.remove('activo');
+}
+
+cargarPedidos();
+</script>
+</body>
+</html>
