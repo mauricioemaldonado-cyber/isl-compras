@@ -183,6 +183,36 @@
     cursor: pointer;
     font-size: 13px;
   }
+  .btn-whatsapp {
+    width: 100%;
+    background: #25D366;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  #linksWhatsApp {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  #linksWhatsApp a {
+    display: block;
+    background: white;
+    border: 1px solid #25D366;
+    color: #128C4A;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #linksWhatsApp a:hover { background: #eafaf0; }
   .ayuda-cotizacion {
     font-size: 11px;
     color: var(--gris);
@@ -341,6 +371,14 @@ function verDetalle(idPedido) {
         <p class="ayuda-cotizacion">Tildá arriba los ítems a cotizar. Los proveedores van en copia oculta (CCO), no se ven entre sí.</p>
       </div>
 
+      <div class="cotizacion-box">
+        <label>Solicitar cotización por WhatsApp — teléfonos con código de país (separados por coma)</label>
+        <input type="text" id="telsCotizacion" placeholder="5493471234567, 5493479876543">
+        <button type="button" class="btn-whatsapp" onclick="generarCotizacionWhatsApp('${p.ID_Pedido}')">Generar WhatsApp</button>
+        <div id="linksWhatsApp"></div>
+        <p class="ayuda-cotizacion">Tildá arriba los ítems a cotizar. Se abre un chat por cada proveedor (cada uno es una conversación separada, no se ven entre sí).</p>
+      </div>
+
       <div class="modal-acciones">
         <button class="btn-oc" onclick="generarDocumento('${p.ID_Pedido}', 'OC')">Generar OC</button>
         <button class="btn-pm" onclick="generarDocumento('${p.ID_Pedido}', 'PM')">Generar PM</button>
@@ -427,6 +465,54 @@ function abrirMailCotizacion(idPedido, items, emails) {
   const bcc = emails.join(',');
   const mailtoUrl = `mailto:?bcc=${encodeURIComponent(bcc)}&subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
   window.location.href = mailtoUrl;
+}
+
+function generarCotizacionWhatsApp(idPedido) {
+  const checks = document.querySelectorAll('.chk-cotizar:checked');
+  if (checks.length === 0) {
+    alert('Tildá al menos un ítem para cotizar.');
+    return;
+  }
+
+  const telsRaw = document.getElementById('telsCotizacion').value.trim();
+  if (!telsRaw) {
+    alert('Ingresá al menos un teléfono de proveedor.');
+    return;
+  }
+  const telefonos = telsRaw.split(',').map(t => t.trim().replace(/[^0-9]/g, '')).filter(t => t);
+
+  const items = Array.from(checks).map(chk => ({
+    descripcion: chk.getAttribute('data-desc'),
+    cantidad: chk.getAttribute('data-cant'),
+    unidad: chk.getAttribute('data-unidad')
+  }));
+
+  llamarAPI({
+    action: 'registrarSolicitudCotizacion',
+    idPedido: idPedido,
+    items: items,
+    emails: telefonos.map(t => 'WhatsApp: ' + t)
+  }).then(res => {
+    if (!res.ok) {
+      alert('No se pudo registrar la solicitud: ' + res.error + '. Igual generamos los links.');
+    }
+    mostrarLinksWhatsApp(items, telefonos);
+  }).catch(() => {
+    mostrarLinksWhatsApp(items, telefonos);
+  });
+}
+
+function mostrarLinksWhatsApp(items, telefonos) {
+  let mensaje = 'Hola, te escribo de Instrumental San Lorenzo (Compras). Necesitamos cotización para:\n\n';
+  items.forEach(i => {
+    mensaje += `- ${i.descripcion} — Cantidad: ${i.cantidad} ${i.unidad}\n`;
+  });
+  mensaje += '\nPor favor envianos precio, plazo de entrega y condiciones de pago. ¡Gracias!\n\nJosé Loaisa - Compras ISL';
+
+  const cont = document.getElementById('linksWhatsApp');
+  cont.innerHTML = telefonos.map(tel =>
+    `<a href="https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}" target="_blank" rel="noopener">Abrir chat con +${tel}</a>`
+  ).join('');
 }
 
 function generarDocumento(idPedido, tipo) {
