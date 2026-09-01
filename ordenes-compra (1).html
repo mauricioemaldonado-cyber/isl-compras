@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Órdenes de Compra - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --naranja: #d97706;
+    --verde: #2e7d32;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+  header a {
+    background: white; color: var(--azul-isl); padding: 9px 16px;
+    border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;
+  }
+
+  .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+
+  .filtros {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .filtros div { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
+  .filtros label { font-size: 12px; font-weight: 600; color: var(--gris); margin-bottom: 4px; }
+  .filtros select, .filtros input {
+    padding: 8px 10px; border: 1px solid var(--borde); border-radius: 6px; font-size: 13px;
+  }
+  .filtros button {
+    background: var(--azul-isl); color: white; border: none; padding: 9px 16px;
+    border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; flex: 0 0 auto;
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; background: white;
+    border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  thead { background: var(--azul-isl); color: white; }
+  th, td { padding: 12px 14px; text-align: left; font-size: 13px; }
+  tbody tr { border-bottom: 1px solid #eee; cursor: pointer; }
+  tbody tr:hover { background: var(--azul-claro); }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+  }
+  .badge-pendiente { background: #fff4e5; color: var(--naranja); }
+  .badge-aprobada { background: var(--azul-claro); color: var(--azul-isl); }
+  .badge-cumplida { background: #eaf6ea; color: var(--verde); }
+  .badge-default { background: #f0f0f0; color: #555; }
+
+  .vacio { text-align: center; padding: 40px; color: var(--gris); font-size: 14px; }
+
+  .overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .overlay.activo { display: flex; }
+  .modal {
+    background: white; border-radius: 10px; width: 92%; max-width: 640px;
+    max-height: 85vh; overflow-y: auto; padding: 22px;
+  }
+  .modal h2 { margin-top: 0; color: var(--azul-isl); font-size: 17px; }
+  .modal .campo { margin-bottom: 8px; font-size: 13px; }
+  .modal .campo strong { color: var(--gris); display: block; font-size: 11px; text-transform: uppercase; }
+  .modal table.items { width: 100%; margin-top: 10px; font-size: 12px; }
+  .modal table.items th, .modal table.items td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .modal-acciones { display: flex; gap: 10px; margin-top: 18px; }
+  .modal-acciones button {
+    flex: 1; padding: 12px; border: none; border-radius: 8px;
+    font-weight: 600; cursor: pointer; font-size: 14px;
+  }
+  .btn-imprimir { background: var(--azul-isl); color: white; }
+  .btn-cerrar { background: #eee; color: #333; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>ISL · Gestor de Compras</h1>
+    <p>Órdenes de Compra</p>
+  </div>
+  <a href="armado-oc.html">+ Armar OC</a>
+</header>
+
+<div class="container">
+  <div class="filtros">
+    <div>
+      <label>N° de OC</label>
+      <input type="text" id="fNumero" placeholder="Ej: 6540">
+    </div>
+    <div>
+      <label>Proveedor</label>
+      <input type="text" id="fProveedor" placeholder="Nombre del proveedor">
+    </div>
+    <div>
+      <label>Estado</label>
+      <select id="fEstado">
+        <option value="">Todos</option>
+        <option value="Pendiente de aprobación">Pendiente de aprobación</option>
+        <option value="Aprobada">Aprobada</option>
+        <option value="Cumplida">Cumplida</option>
+      </select>
+    </div>
+    <button onclick="cargarOCs()">Filtrar</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>N° OC</th>
+        <th>Fecha</th>
+        <th>Proveedor</th>
+        <th>Ítems</th>
+        <th>Total</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="tbodyOC">
+      <tr><td colspan="6" class="vacio">Cargando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="overlay" id="overlayDetalle">
+  <div class="modal" id="modalDetalle"></div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHn09xBtZccaF1ziO5omhrCd1QvcLq093wE-sAQSG7TuYcNfWEJG_c64_81N_qUamXHw/exec';
+// ===================================================
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+function formatFecha(fechaStr) {
+  const d = new Date(fechaStr);
+  if (isNaN(d)) return fechaStr;
+  return d.toLocaleDateString('es-AR');
+}
+
+function formatMoneda(n) {
+  return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function claseEstadoOC(estado) {
+  if (estado === 'Pendiente de aprobación') return 'badge-pendiente';
+  if (estado === 'Aprobada') return 'badge-aprobada';
+  if (estado === 'Cumplida') return 'badge-cumplida';
+  return 'badge-default';
+}
+
+function cargarOCs() {
+  const tbody = document.getElementById('tbodyOC');
+  tbody.innerHTML = '<tr><td colspan="6" class="vacio">Cargando...</td></tr>';
+
+  const filtros = {
+    numero: document.getElementById('fNumero').value,
+    proveedor: document.getElementById('fProveedor').value,
+    estado: document.getElementById('fEstado').value
+  };
+
+  llamarAPI({ action: 'listarOC', filtros: filtros }).then(res => {
+    if (!res.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vacio">Error: ' + res.error + '</td></tr>';
+      return;
+    }
+    if (res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="vacio">No hay OC que coincidan con el filtro.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.data.map(o => `
+      <tr onclick="verDetalle('${o.ID_OC}')">
+        <td><strong>${o.Numero_OC}</strong></td>
+        <td>${formatFecha(o.Fecha)}</td>
+        <td>${o.Proveedor_RazonSocial}</td>
+        <td>${o.CantidadItems}</td>
+        <td>${o.Moneda === 'USD' ? 'US$' : '$'} ${formatMoneda(o.Total)}</td>
+        <td><span class="badge ${claseEstadoOC(o.Estado)}">${o.Estado}</span></td>
+      </tr>
+    `).join('');
+  });
+}
+
+function verDetalle(idOC) {
+  const modal = document.getElementById('modalDetalle');
+  modal.innerHTML = '<p>Cargando...</p>';
+  document.getElementById('overlayDetalle').classList.add('activo');
+
+  llamarAPI({ action: 'obtenerOC', idOC: idOC }).then(res => {
+    if (!res.ok) {
+      modal.innerHTML = `<p>Error: ${res.error}</p><div class="modal-acciones"><button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button></div>`;
+      return;
+    }
+    const oc = res.data.oc;
+    const items = res.data.items;
+
+    modal.innerHTML = `
+      <h2>OC ${oc.Numero_OC}</h2>
+      <div class="campo"><strong>Proveedor</strong>${oc.Proveedor_RazonSocial}</div>
+      <div class="campo"><strong>Tipo</strong>${oc.Tipo} ${oc.Especialidad ? '— ' + oc.Especialidad : ''}</div>
+      <div class="campo"><strong>Condiciones de pago</strong>${oc.Condiciones_Pago || '-'}</div>
+      <div class="campo"><strong>Plazo / Forma de entrega</strong>${oc.Plazo_Entrega || '-'} / ${oc.Forma_Entrega || '-'}</div>
+      <div class="campo"><strong>Estado</strong><span class="badge ${claseEstadoOC(oc.Estado)}">${oc.Estado}</span></div>
+      ${oc.Requisitos_Cierre ? `<div class="campo"><strong>Requisitos de cierre</strong>${oc.Requisitos_Cierre}</div>` : ''}
+
+      <table class="items">
+        <thead><tr><th>Descripción</th><th>Cant.</th><th>Unidad</th><th>P. Unit.</th><th>IVA</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          ${items.map(i => `<tr><td>${i.Descripcion}</td><td>${i.Cantidad}</td><td>${i.Unidad}</td><td>${formatMoneda(i.Precio_Unitario)}</td><td>${i.IVA_Pct}%</td><td>${formatMoneda(i.Subtotal)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+
+      <div class="modal-acciones">
+        <button class="btn-imprimir" onclick="imprimirOC('${idOC}')">Ver / Imprimir OC</button>
+      </div>
+      <div class="modal-acciones">
+        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    `;
+  });
+}
+
+function cerrarModal() {
+  document.getElementById('overlayDetalle').classList.remove('activo');
+}
+
+function imprimirOC(idOC) {
+  llamarAPI({ action: 'obtenerOC', idOC: idOC }).then(res => {
+    if (!res.ok) { alert('Error: ' + res.error); return; }
+    const oc = res.data.oc;
+    const items = res.data.items;
+    const simbolo = oc.Moneda === 'USD' ? 'US$' : (oc.Moneda === 'Euros' ? '€' : '$');
+
+    const descuentoPct = Number(oc.Descuento_Pct) || 0;
+    const bonificacionPct = Number(oc.Bonificacion_Pct) || 0;
+
+    let subtotal = 0;
+    const buckets = { '21': 0, '10.5': 0, '0': 0 };
+    items.forEach(i => {
+      const importe = Number(i.Subtotal || 0);
+      subtotal += importe;
+      const neto = importe * (1 - descuentoPct / 100 - bonificacionPct / 100);
+      const rate = String(i.IVA_Pct || '0');
+      buckets[rate] = (buckets[rate] || 0) + neto;
+    });
+    const descuentoMonto = subtotal * descuentoPct / 100;
+    const bonifMonto = subtotal * bonificacionPct / 100;
+    const gravadoTotal = buckets['21'] + buckets['10.5'] + buckets['0'];
+    const iva21Monto = buckets['21'] * 0.21;
+    const iva105Monto = buckets['10.5'] * 0.105;
+    const total = gravadoTotal + iva21Monto + iva105Monto;
+
+    // Imputación: si todos los ítems comparten el mismo centro de costo, se muestra directo;
+    // si hay varios, se listan todos (una OC puede combinar ítems de distintos pedidos/obras).
+    const centrosUnicos = [...new Set(items.map(i => i.Centro_Costo).filter(Boolean))];
+    const imputacionTexto = centrosUnicos.length <= 1
+      ? (centrosUnicos[0] || '-')
+      : centrosUnicos.join(' / ');
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>OC ${oc.Numero_OC}</title>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #111; margin: 16mm; }
+        table { width: 100%; border-collapse: collapse; }
+        .marco { border: 2px solid #1a3a6b; }
+        .header-table td { border: none; padding: 8px 12px; vertical-align: top; }
+        .header-table .logo-cell h1 { color: #1a3a6b; font-size: 18px; margin: 0; }
+        .header-table .logo-cell div { font-size: 9px; color: #444; }
+        .header-table .oc-cell { text-align: right; border-left: 2px solid #1a3a6b; }
+        .header-table .oc-cell .numero { font-size: 16px; font-weight: bold; color: #1a3a6b; }
+        .seccion-titulo {
+          background: #1a3a6b; color: white; font-weight: bold; font-size: 11px;
+          padding: 4px 10px; margin-top: 10px;
+        }
+        .datos-proveedor { border: 1px solid #999; border-top: none; padding: 8px 10px; }
+        .datos-proveedor div { margin-bottom: 3px; }
+        .tabla-items { margin-top: 0; }
+        .tabla-items th, .tabla-items td { border: 1px solid #999; padding: 5px 7px; font-size: 10px; text-align: left; }
+        .tabla-items th { background: #eaf1fb; color: #1a3a6b; }
+        .tabla-items td.num { text-align: right; }
+
+        .totales-box { margin-top: 0; border: 1px solid #999; border-top: none; }
+        .totales-box table { border-collapse: collapse; }
+        .totales-box td { border-right: 1px solid #999; padding: 6px 10px; text-align: center; font-size: 10px; }
+        .totales-box td:last-child { border-right: none; }
+        .totales-box .label { color: #555; font-size: 9px; text-transform: uppercase; }
+        .totales-box .valor { font-weight: bold; font-size: 12px; }
+        .totales-box .total-final { background: #eaf1fb; }
+        .totales-box .total-final .valor { color: #1a3a6b; font-size: 14px; }
+
+        .condiciones { border: 1px solid #999; border-top: none; padding: 8px 10px; }
+        .condiciones div { margin-bottom: 3px; }
+        .moneda-check { margin-top: 4px; }
+        .moneda-check span { margin-right: 14px; }
+
+        .firmas-tabla { border: 1px solid #999; border-top: none; }
+        .firmas-tabla td { text-align: center; padding: 18px 10px 6px; font-size: 10px; border-right: 1px solid #999; }
+        .firmas-tabla td:last-child { border-right: none; }
+        .firmas-tabla .nombre { border-top: 1px solid #333; margin: 0 20px; display: block; padding-top: 4px; }
+
+        .recepcion { border: 1px solid #999; border-top: none; padding: 8px 10px; }
+        .recepcion table { border: none; }
+        .recepcion td { border: none; padding: 3px 0; font-size: 10px; }
+        .recepcion .linea { border-bottom: 1px solid #999; display: inline-block; min-width: 140px; }
+
+        .imputacion { border: 1px solid #999; border-top: none; padding: 8px 10px; font-size: 10px; }
+
+        @media print {
+          body { margin: 10mm; }
+          @page { size: A4; margin: 10mm; }
+        }
+      </style>
+      </head><body>
+
+      <table class="header-table marco">
+        <tr>
+          <td class="logo-cell" style="width:60%;">
+            <h1>INSTRUMENTAL SAN LORENZO</h1>
+            <div>Ingeniería y Construcciones</div>
+            <div>L.N. Alem 572 - San Lorenzo, Santa Fe</div>
+            <div>Tel: (03476) 424702 / 422746 / 420558</div>
+            <div>info@instrumentalsl.com.ar · www.instrumentalsl.com.ar</div>
+          </td>
+          <td class="oc-cell" style="width:40%;">
+            <div>ORDEN DE COMPRA N°</div>
+            <div class="numero">${oc.Numero_OC}</div>
+            <div>Fecha: ${formatFecha(oc.Fecha)}</div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="seccion-titulo">DATOS DEL PROVEEDOR</div>
+      <div class="datos-proveedor">
+        <div><strong>Nombre o Razón Social:</strong> ${oc.Proveedor_RazonSocial}</div>
+        <div><strong>Domicilio:</strong> ${oc.Proveedor_Domicilio || '-'}</div>
+        <div><strong>Teléfono:</strong> ${oc.Proveedor_Telefono || '-'} &nbsp;&nbsp; <strong>Email:</strong> ${oc.Proveedor_Email || '-'}</div>
+        <div><strong>Nombre del contacto:</strong> ${oc.Proveedor_Contacto || '-'} &nbsp;&nbsp; <strong>Cargo:</strong> ${oc.Proveedor_Cargo || '-'}</div>
+      </div>
+
+      <table class="tabla-items">
+        <thead>
+          <tr>
+            <th>Recibido</th><th>Cant.</th><th>U.Med.</th><th>Descripción</th><th>Código</th><th>Precio Unit.</th><th>IVA</th><th>SubTotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(i => `
+            <tr>
+              <td></td>
+              <td class="num">${i.Cantidad}</td>
+              <td>${i.Unidad}</td>
+              <td>${i.Descripcion}</td>
+              <td>${i.Codigo || ''}</td>
+              <td class="num">${simbolo} ${formatMoneda(i.Precio_Unitario)}</td>
+              <td class="num">${i.IVA_Pct}%</td>
+              <td class="num">${simbolo} ${formatMoneda(i.Subtotal)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="totales-box">
+        <table>
+          <tr>
+            <td>
+              <div class="label">Subtotal</div>
+              <div class="valor">${simbolo} ${formatMoneda(subtotal)}</div>
+            </td>
+            <td>
+              <div class="label">Descuento ${descuentoPct}%</div>
+              <div class="valor">${simbolo} ${formatMoneda(descuentoMonto)}</div>
+            </td>
+            <td>
+              <div class="label">Bonificación ${bonificacionPct}%</div>
+              <div class="valor">${simbolo} ${formatMoneda(bonifMonto)}</div>
+            </td>
+            <td>
+              <div class="label">Gravado</div>
+              <div class="valor">${simbolo} ${formatMoneda(gravadoTotal)}</div>
+            </td>
+            <td>
+              <div class="label">IVA 21,00%</div>
+              <div class="valor">${simbolo} ${formatMoneda(iva21Monto)}</div>
+            </td>
+            <td>
+              <div class="label">IVA 10,50%</div>
+              <div class="valor">${simbolo} ${formatMoneda(iva105Monto)}</div>
+            </td>
+            <td class="total-final">
+              <div class="label">Total c/IVA</div>
+              <div class="valor">${simbolo} ${formatMoneda(total)}</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="condiciones">
+        <div class="moneda-check">
+          <strong>Moneda:</strong>
+          <span>${oc.Moneda === 'Pesos' ? '☑' : '☐'} Pesos</span>
+          <span>${oc.Moneda === 'USD' ? '☑' : '☐'} Dólares estadounidenses</span>
+          <span>${oc.Moneda === 'Euros' ? '☑' : '☐'} Euros</span>
+        </div>
+        <div><strong>Condiciones de pago:</strong> ${oc.Condiciones_Pago || '-'}</div>
+        <div><strong>Plazo de entrega:</strong> ${oc.Plazo_Entrega || '-'} &nbsp;&nbsp; <strong>Forma de entrega:</strong> ${oc.Forma_Entrega || '-'}</div>
+        ${oc.Nro_Presupuesto ? `<div><strong>Según presupuesto N°:</strong> ${oc.Nro_Presupuesto}</div>` : ''}
+        ${oc.Requisitos_Cierre ? `<div><strong>Requisitos para el cierre de la OC:</strong> ${oc.Requisitos_Cierre}</div>` : ''}
+        ${oc.Observaciones ? `<div><strong>Observaciones:</strong> ${oc.Observaciones}</div>` : ''}
+      </div>
+
+      <table class="firmas-tabla">
+        <tr>
+          <td style="width:33%;"><span class="nombre">${oc.Confecciono || ''}</span>Confeccionó O.C.</td>
+          <td style="width:33%;"><span class="nombre">${oc.Autorizo || ''}</span>Autorizó O.C.</td>
+          <td style="width:34%;"><span class="nombre">${oc.Ejecuto || ''}</span>Ejecutó O.C.</td>
+        </tr>
+      </table>
+
+      <div class="seccion-titulo">RECEPCIÓN DE MERCADERÍA COMPRADA</div>
+      <div class="recepcion">
+        <table>
+          <tr>
+            <td>Fecha recepción 1: <span class="linea">&nbsp;</span></td>
+            <td>Factura N°: <span class="linea">&nbsp;</span></td>
+            <td>Remito N°: <span class="linea">&nbsp;</span></td>
+          </tr>
+          <tr>
+            <td>Fecha recepción 2: <span class="linea">&nbsp;</span></td>
+            <td>Factura N°: <span class="linea">&nbsp;</span></td>
+            <td>Remito N°: <span class="linea">&nbsp;</span></td>
+          </tr>
+        </table>
+        <div style="margin-top:6px;">Controló: ☐ Con Remito &nbsp;&nbsp; ☐ Con Factura</div>
+      </div>
+
+      <div class="imputacion">
+        <strong>Imputación Contable / Obra:</strong> ${imputacionTexto}
+        ${oc.Tipo === 'Servicio' ? ' (Servicio)' : ''}
+      </div>
+
+      <script>window.print();</` + `script>
+      </body></html>
+    `);
+    win.document.close();
+  });
+}
+
+cargarOCs();
+</script>
+</body>
+</html>
