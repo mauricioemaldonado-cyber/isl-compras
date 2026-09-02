@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armado de OC - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --naranja: #d97706;
+    --verde: #2e7d32;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .layout {
+    display: flex;
+    gap: 16px;
+    max-width: 1300px;
+    margin: 20px auto;
+    padding: 0 16px;
+    align-items: flex-start;
+  }
+  .col-izq { flex: 1.3; min-width: 0; }
+  .col-der { flex: 1; position: sticky; top: 16px; min-width: 0; }
+
+  .panel {
+    background: white;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--azul-isl);
+  }
+
+  .pedido-block {
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .pedido-header {
+    background: var(--azul-claro);
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .pedido-header strong { color: var(--azul-isl); }
+  .pedido-header .meta { color: var(--gris); font-size: 12px; }
+  .pedido-items { padding: 8px 14px; display: none; }
+  .pedido-items.abierto { display: block; }
+  .item-check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .item-check-row:last-child { border-bottom: none; }
+  .item-check-row .desc { flex: 1; }
+  .item-check-row .cant { color: var(--gris); font-size: 12px; }
+  .badge-urgente { color: var(--rojo); font-weight: 700; font-size: 11px; margin-left: 6px; }
+
+  .carrito-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    background: var(--azul-claro);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .carrito-item .desc { flex: 2; }
+  .carrito-item .precio input {
+    width: 90px;
+    padding: 6px;
+    border: 1px solid var(--borde);
+    border-radius: 5px;
+    font-size: 12px;
+  }
+  .carrito-item .subtotal { flex: 0 0 80px; text-align: right; font-weight: 600; }
+  .carrito-item button {
+    background: none;
+    border: none;
+    color: var(--rojo);
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .carrito-vacio { color: var(--gris); font-size: 13px; text-align: center; padding: 20px 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 10px;
+    color: #374151;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+
+  .checklist { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .checklist label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 400;
+    margin: 0;
+    font-size: 13px;
+  }
+  .checklist input { width: auto; }
+
+  .totales {
+    background: var(--azul-claro);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  .totales div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totales .total-final { font-weight: 700; font-size: 15px; color: var(--azul-isl); border-top: 1px solid #c7d6ec; margin-top: 6px; padding-top: 8px; }
+
+  #btnCrearOC {
+    width: 100%;
+    background: var(--azul-isl);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  #btnCrearOC:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #mensaje {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+  }
+  #mensaje.exito { background: #eaf6ea; color: var(--verde); display: block; }
+  #mensaje.error { background: #fdecea; color: var(--rojo); display: block; }
+
+  .filtro-buscar {
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ISL · Gestor de Compras</h1>
+  <p>Armado de Orden de Compra</p>
+</header>
+<div style="max-width:1300px; margin:12px auto 0; padding:0 16px;">
+  <a href="ordenes-compra.html" style="color:#1a3a6b; font-size:13px; font-weight:600; text-decoration:none;">← Ver listado de OC generadas</a>
+</div>
+
+<div class="layout">
+
+  <div class="col-izq">
+    <div class="panel">
+      <h2>1. Seleccionar ítems de pedidos pendientes</h2>
+      <input type="text" class="filtro-buscar" id="filtroBuscar" placeholder="Buscar por N° de pedido, solicitante, obra o descripción...">
+      <div id="listaPedidos"><p style="color:#6b7280;font-size:13px;">Cargando pedidos...</p></div>
+    </div>
+  </div>
+
+  <div class="col-der">
+    <div class="panel">
+      <h2>2. Ítems de esta OC</h2>
+      <div id="carrito"><div class="carrito-vacio">Todavía no agregaste ítems.</div></div>
+    </div>
+
+    <div class="panel" id="panelDatosOC" style="display:none;">
+      <h2>3. Datos de la Orden de Compra</h2>
+
+      <div class="row">
+        <div>
+          <label>N° de OC</label>
+          <input type="text" id="numeroOC" placeholder="Ej: 6540-I-LMT">
+        </div>
+        <div>
+          <label>Especialidad</label>
+          <select id="especialidad"><option value="">Cargando...</option></select>
+        </div>
+      </div>
+
+      <label>Tipo</label>
+      <select id="tipoOC">
+        <option value="Materiales">Materiales</option>
+        <option value="Servicio">Servicio</option>
+      </select>
+
+      <label>Proveedor — Razón Social</label>
+      <div style="position:relative;">
+        <input type="text" id="provRazonSocial" required autocomplete="off" oninput="buscarProveedor(this.value)">
+        <input type="hidden" id="provIdSeleccionado">
+        <div class="autocomplete-list" id="autoProveedor" style="position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:6px; z-index:10; max-height:160px; overflow-y:auto; display:none;"></div>
+      </div>
+      <p style="font-size:11px; color:#6b7280; margin:4px 0 0;">Si ya cotizaste con este proveedor antes, aparece sugerido y se completan sus datos solo.</p>
+
+      <div class="row">
+        <div><label>Domicilio</label><input type="text" id="provDomicilio"></div>
+        <div><label>Teléfono</label><input type="text" id="provTelefono"></div>
+      </div>
+      <div class="row">
+        <div><label>Email</label><input type="email" id="provEmail"></div>
+        <div><label>Nombre de contacto</label><input type="text" id="provContacto"></div>
+      </div>
+      <label>Cargo del contacto</label>
+      <input type="text" id="provCargo">
+
+      <label>Moneda</label>
+      <select id="moneda">
+        <option value="Pesos">Pesos</option>
+        <option value="USD">Dólares estadounidenses</option>
+        <option value="Euros">Euros</option>
+      </select>
+
+      <div class="row">
+        <div><label>Descuento %</label><input type="number" id="descuentoPct" value="0" step="any"></div>
+        <div><label>Bonificación %</label><input type="number" id="bonificacionPct" value="0" step="any"></div>
+      </div>
+
+      <label>Condiciones de pago</label>
+      <textarea id="condicionesPago" placeholder="Ej: Anticipo 15% - Saldo a 15 días FF"></textarea>
+
+      <div class="row">
+        <div><label>Plazo de entrega</label><input type="text" id="plazoEntrega"></div>
+        <div><label>Forma de entrega</label><input type="text" id="formaEntrega"></div>
+      </div>
+
+      <label>N° de presupuesto de referencia</label>
+      <input type="text" id="nroPresupuesto">
+
+      <div class="row">
+        <div><label>Confeccionó</label><input type="text" id="confecciono" value="José Loaisa"></div>
+        <div><label>Autorizó</label><input type="text" id="autorizo" placeholder="Gerencia"></div>
+      </div>
+      <label>Ejecutó</label>
+      <input type="text" id="ejecuto" value="José Loaisa">
+
+      <label>Requisitos para el cierre de la OC</label>
+      <div class="checklist">
+        <label><input type="checkbox" value="Certificado de calidad" class="chk-requisito"> Certificado de calidad</label>
+        <label><input type="checkbox" value="Certificado de calibración" class="chk-requisito"> Certificado de calibración</label>
+        <label><input type="checkbox" value="Hoja de seguridad / MSDS" class="chk-requisito"> Hoja de seguridad / MSDS</label>
+        <label><input type="checkbox" value="Garantía escrita" class="chk-requisito"> Garantía escrita</label>
+        <label><input type="checkbox" value="Protocolo de ensayo" class="chk-requisito"> Protocolo de ensayo</label>
+      </div>
+
+      <label>Observaciones</label>
+      <textarea id="observacionesOC"></textarea>
+
+      <div class="totales" id="totales"></div>
+
+      <button id="btnCrearOC" onclick="crearOC()">Generar Orden de Compra</button>
+      <div id="mensaje"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHn09xBtZccaF1ziO5omhrCd1QvcLq093wE-sAQSG7TuYcNfWEJG_c64_81N_qUamXHw/exec';
+// ===================================================
+
+let pedidosData = [];
+let carrito = []; // { idPedidoOrigen, nItemPedidoOrigen, descripcion, cantidad, unidad, centroCosto, itemCertificacion, categoriaGasto, precioUnitario }
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+function cargarPedidos() {
+  llamarAPI({ action: 'listarPedidosParaOC' }).then(res => {
+    if (!res.ok) {
+      document.getElementById('listaPedidos').innerHTML = '<p style="color:#c0392b;">Error: ' + res.error + '</p>';
+      return;
+    }
+    pedidosData = res.data;
+    renderPedidos(pedidosData);
+  });
+}
+
+function renderPedidos(pedidos) {
+  const cont = document.getElementById('listaPedidos');
+  if (pedidos.length === 0) {
+    cont.innerHTML = '<p style="color:#6b7280;font-size:13px;">No hay ítems pendientes en ningún pedido.</p>';
+    return;
+  }
+
+  cont.innerHTML = pedidos.map((p, idx) => `
+    <div class="pedido-block">
+      <div class="pedido-header" onclick="toggleGrupo(${idx})">
+        <div>
+          <strong>${p.ID_Pedido}</strong> — ${p.Solicitante}
+          ${p.Urgencia === 'Si' ? '<span class="badge-urgente">URGENTE</span>' : ''}
+        </div>
+        <div class="meta">${p.Centro_Costo}</div>
+      </div>
+      <div class="pedido-items" id="grupo-${idx}">
+        ${p.items.map(item => `
+          <div class="item-check-row">
+            <input type="checkbox"
+              onchange="toggleItem(this, ${idx}, ${item.N_Item})">
+            <div class="desc">${item.Descripcion}</div>
+            <div class="cant">${item.Cantidad} ${item.Unidad}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleGrupo(idx) {
+  document.getElementById('grupo-' + idx).classList.toggle('abierto');
+}
+
+function toggleItem(checkbox, idxPedido, nItem) {
+  const pedido = pedidosData[idxPedido];
+  const item = pedido.items.find(i => i.N_Item === nItem);
+
+  if (checkbox.checked) {
+    carrito.push({
+      idPedidoOrigen: pedido.ID_Pedido,
+      nItemPedidoOrigen: item.N_Item,
+      descripcionOriginal: item.Descripcion,
+      nomenclaturaISL: item.Descripcion, // arranca igual, José la ajusta si corresponde
+      idCatalogo: item.ID_Catalogo || '',
+      cantidad: item.Cantidad,
+      unidad: item.Unidad,
+      rubro: '',
+      codigo: '',
+      ivaPct: '21',
+      centroCosto: pedido.Centro_Costo,
+      itemCertificacion: pedido.Item_Certificacion,
+      categoriaGasto: pedido.Categoria_Gasto,
+      precioUnitario: 0
+    });
+  } else {
+    carrito = carrito.filter(c => !(c.idPedidoOrigen === pedido.ID_Pedido && c.nItemPedidoOrigen === nItem));
+  }
+
+  renderCarrito();
+}
+
+let timeoutBusquedaCarrito;
+function buscarCatalogoCarrito(i, texto) {
+  carrito[i].idCatalogo = '';
+  clearTimeout(timeoutBusquedaCarrito);
+  const lista = document.getElementById('auto-carrito-' + i);
+  if (!lista) return;
+
+  if (texto.length < 3) {
+    lista.style.display = 'none';
+    return;
+  }
+
+  timeoutBusquedaCarrito = setTimeout(() => {
+    llamarAPI({ action: 'buscarCatalogo', texto: texto }).then(res => {
+      if (!res.ok || res.data.length === 0) {
+        lista.style.display = 'none';
+        return;
+      }
+      lista.innerHTML = res.data.map(item =>
+        `<div onclick="seleccionarCatalogoCarrito(${i}, '${item.ID_Catalogo}', '${item.Nomenclatura_ISL.replace(/'/g, "\\'")}')">
+          ${item.Nomenclatura_ISL} <span style="color:#2e7d32;font-size:10px;">(catálogo)</span>
+        </div>`
+      ).join('');
+      lista.style.display = 'block';
+    });
+  }, 350);
+}
+
+function seleccionarCatalogoCarrito(i, idCatalogo, nombre) {
+  carrito[i].idCatalogo = idCatalogo;
+  carrito[i].nomenclaturaISL = nombre;
+  document.getElementById('auto-carrito-' + i).style.display = 'none';
+  renderCarrito();
+}
+
+function actualizarNomenclatura(i, valor) {
+  carrito[i].nomenclaturaISL = valor;
+  carrito[i].idCatalogo = ''; // si lo edita a mano, ya no es el ítem exacto del catálogo
+}
+
+function actualizarRubro(i, valor) {
+  carrito[i].rubro = valor;
+}
+
+function actualizarCodigo(i, valor) {
+  carrito[i].codigo = valor;
+}
+
+function actualizarIVA(i, valor) {
+  carrito[i].ivaPct = valor;
+  actualizarTotales();
+}
+
+function renderCarrito() {
+  const cont = document.getElementById('carrito');
+  const panelDatos = document.getElementById('panelDatosOC');
+
+  if (carrito.length === 0) {
+    cont.innerHTML = '<div class="carrito-vacio">Todavía no agregaste ítems.</div>';
+    panelDatos.style.display = 'none';
+    return;
+  }
+
+  panelDatos.style.display = 'block';
+
+  cont.innerHTML = carrito.map((c, i) => `
+    <div class="carrito-item" style="flex-direction:column; align-items:stretch;">
+      <div style="font-size:11px; color:#6b7280; margin-bottom:4px;">
+        Pedido dice: "${c.descripcionOriginal}" — ${c.cantidad} ${c.unidad} · ${c.idPedidoOrigen}
+        ${c.idCatalogo ? '<span style="color:#2e7d32;font-weight:600;"> · del catálogo</span>' : ''}
+      </div>
+      <div style="position:relative; margin-bottom:4px;">
+        <input type="text" placeholder="Nomenclatura ISL (oficial)" value="${c.nomenclaturaISL.replace(/"/g,'&quot;')}"
+          oninput="buscarCatalogoCarrito(${i}, this.value); actualizarNomenclatura(${i}, this.value)"
+          style="font-weight:600;">
+        <div class="autocomplete-list" id="auto-carrito-${i}" style="position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:6px; z-index:10; max-height:150px; overflow-y:auto; display:none;"></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" placeholder="Código (opcional)" value="${c.codigo || ''}" oninput="actualizarCodigo(${i}, this.value)" style="flex:1.3; font-size:12px;">
+        <input type="text" placeholder="Rubro (opcional)" value="${c.rubro}" oninput="actualizarRubro(${i}, this.value)" style="flex:1.3; font-size:12px;">
+        <input type="number" min="0" step="0.001" placeholder="Precio unit." value="${c.precioUnitario || ''}" oninput="actualizarPrecio(${i}, this.value)" style="flex:1; font-size:12px;">
+        <select onchange="actualizarIVA(${i}, this.value)" style="flex:0 0 70px; font-size:12px;">
+          <option value="21" ${c.ivaPct === '21' || c.ivaPct === 21 ? 'selected' : ''}>21%</option>
+          <option value="10.5" ${c.ivaPct === '10.5' ? 'selected' : ''}>10,5%</option>
+          <option value="0" ${c.ivaPct === '0' || c.ivaPct === 0 ? 'selected' : ''}>0%</option>
+        </select>
+        <div id="subtotal-carrito-${i}" style="flex:0 0 70px; text-align:right; font-weight:600; font-size:12px;">$${(c.cantidad * c.precioUnitario).toFixed(2)}</div>
+        <button onclick="quitarDelCarrito(${i})" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;">&times;</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Cerrar autocompletar al hacer click afuera de cualquier input del carrito
+  document.querySelectorAll('.autocomplete-list[id^="auto-carrito-"]').forEach(l => {
+    l.previousElementSibling; // noop, mantiene referencia
+  });
+
+  actualizarTotales();
+}
+
+function actualizarPrecio(i, valor) {
+  // Redondeo a 3 decimales, sin redibujar el carrito (para no perder el foco del input mientras se escribe)
+  const num = parseFloat(valor);
+  carrito[i].precioUnitario = isNaN(num) ? 0 : Math.round(num * 1000) / 1000;
+
+  const subtotalEl = document.getElementById('subtotal-carrito-' + i);
+  if (subtotalEl) {
+    subtotalEl.textContent = '$' + (carrito[i].cantidad * carrito[i].precioUnitario).toFixed(2);
+  }
+  actualizarTotales();
+}
+
+function quitarDelCarrito(i) {
+  const item = carrito[i];
+  // Destildar el checkbox correspondiente si sigue visible
+  const idxPedido = pedidosData.findIndex(p => p.ID_Pedido === item.idPedidoOrigen);
+  if (idxPedido !== -1) {
+    const filas = document.querySelectorAll(`#grupo-${idxPedido} .item-check-row`);
+    const pedido = pedidosData[idxPedido];
+    pedido.items.forEach((it, itemIdx) => {
+      if (it.N_Item === item.nItemPedidoOrigen && filas[itemIdx]) {
+        filas[itemIdx].querySelector('input[type=checkbox]').checked = false;
+      }
+    });
+  }
+  carrito.splice(i, 1);
+  renderCarrito();
+}
+
+function actualizarTotales() {
+  const descuentoPct = parseFloat(document.getElementById('descuentoPct').value) || 0;
+  const bonificacionPct = parseFloat(document.getElementById('bonificacionPct').value) || 0;
+
+  let subtotal = 0;
+  const buckets = { '21': 0, '10.5': 0, '0': 0 }; // gravado por alícuota, después de descuento/bonif
+
+  carrito.forEach(c => {
+    const importe = c.cantidad * c.precioUnitario;
+    subtotal += importe;
+    const neto = importe * (1 - descuentoPct / 100 - bonificacionPct / 100);
+    const rate = String(c.ivaPct || '21');
+    buckets[rate] = (buckets[rate] || 0) + neto;
+  });
+
+  const descuentoMonto = subtotal * descuentoPct / 100;
+  const bonificacionMonto = subtotal * bonificacionPct / 100;
+  const gravadoTotal = buckets['21'] + buckets['10.5'] + buckets['0'];
+  const iva21Monto = buckets['21'] * 0.21;
+  const iva105Monto = buckets['10.5'] * 0.105;
+  const total = gravadoTotal + iva21Monto + iva105Monto;
+
+  document.getElementById('totales').innerHTML = `
+    <div><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    <div><span>Descuento (${descuentoPct}%)</span><span>-$${descuentoMonto.toFixed(2)}</span></div>
+    <div><span>Bonificación (${bonificacionPct}%)</span><span>-$${bonificacionMonto.toFixed(2)}</span></div>
+    <div><span>Gravado</span><span>$${gravadoTotal.toFixed(2)}</span></div>
+    <div><span>IVA 21%</span><span>$${iva21Monto.toFixed(2)}</span></div>
+    <div><span>IVA 10,5%</span><span>$${iva105Monto.toFixed(2)}</span></div>
+    <div class="total-final"><span>TOTAL</span><span>$${total.toFixed(2)}</span></div>
+  `;
+}
+
+['descuentoPct', 'bonificacionPct'].forEach(id => {
+  document.getElementById(id).addEventListener('input', actualizarTotales);
+});
+
+// Cerrar listas de autocompletar del carrito al hacer click afuera
+document.addEventListener('click', function(e) {
+  if (!e.target.matches('.carrito-item input[type="text"]')) {
+    document.querySelectorAll('[id^="auto-carrito-"]').forEach(l => l.style.display = 'none');
+  }
+});
+
+// ---- Autocompletar Proveedor ----
+let timeoutBusquedaProveedor;
+function buscarProveedor(texto) {
+  document.getElementById('provIdSeleccionado').value = '';
+  clearTimeout(timeoutBusquedaProveedor);
+  const lista = document.getElementById('autoProveedor');
+
+  if (texto.length < 2) {
+    lista.style.display = 'none';
+    return;
+  }
+
+  timeoutBusquedaProveedor = setTimeout(() => {
+    llamarAPI({ action: 'buscarProveedores', texto: texto }).then(res => {
+      if (!res.ok || res.data.length === 0) {
+        lista.style.display = 'none';
+        return;
+      }
+      lista.innerHTML = res.data.map(p => `
+        <div onclick='seleccionarProveedor(${JSON.stringify(p).replace(/'/g, "&apos;")})' style="padding:8px 10px; cursor:pointer; font-size:13px; border-bottom:1px solid #f0f0f0;">
+          ${p.Razon_Social} <span style="color:#2e7d32;font-size:11px;">(ya cargado)</span>
+        </div>
+      `).join('');
+      lista.style.display = 'block';
+    });
+  }, 350);
+}
+
+function seleccionarProveedor(p) {
+  document.getElementById('provIdSeleccionado').value = p.ID_Proveedor;
+  document.getElementById('provRazonSocial').value = p.Razon_Social || '';
+  document.getElementById('provDomicilio').value = p.Domicilio || '';
+  document.getElementById('provTelefono').value = p.Telefono || '';
+  document.getElementById('provEmail').value = p.Email || '';
+  document.getElementById('provContacto').value = p.Contacto || '';
+  document.getElementById('provCargo').value = p.Cargo || '';
+  document.getElementById('autoProveedor').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  if (e.target.id !== 'provRazonSocial') {
+    document.getElementById('autoProveedor').style.display = 'none';
+  }
+});
+
+// ---- Especialidades ----
+function cargarEspecialidades() {
+  llamarAPI({ action: 'listarEspecialidades' }).then(res => {
+    const select = document.getElementById('especialidad');
+    if (!res.ok || res.data.length === 0) {
+      select.innerHTML = '<option value="">(cargar en hoja Especialidades)</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">Seleccionar...</option>' +
+      res.data.map(e => `<option value="${e.Codigo}">${e.Codigo} — ${e.Nombre}</option>`).join('');
+  });
+}
+
+// ---- Búsqueda / filtro ----
+document.getElementById('filtroBuscar').addEventListener('input', function() {
+  const t = this.value.toLowerCase();
+  if (!t) { renderPedidos(pedidosData); return; }
+
+  const filtrados = pedidosData
+    .map(p => ({ ...p, items: p.items.filter(i => i.Descripcion.toLowerCase().includes(t)) }))
+    .filter(p =>
+      p.ID_Pedido.toLowerCase().includes(t) ||
+      p.Solicitante.toLowerCase().includes(t) ||
+      p.Centro_Costo.toLowerCase().includes(t) ||
+      p.items.length > 0
+    );
+  renderPedidos(pedidosData.filter(p =>
+    p.ID_Pedido.toLowerCase().includes(t) ||
+    p.Solicitante.toLowerCase().includes(t) ||
+    p.Centro_Costo.toLowerCase().includes(t) ||
+    p.items.some(i => i.Descripcion.toLowerCase().includes(t))
+  ));
+});
+
+// ---- Crear OC ----
+function crearOC() {
+  if (carrito.length === 0) {
+    mostrarMensaje('Agregá al menos un ítem.', 'error');
+    return;
+  }
+  const numeroOC = document.getElementById('numeroOC').value.trim();
+  const provRazonSocial = document.getElementById('provRazonSocial').value.trim();
+  if (!numeroOC || !provRazonSocial) {
+    mostrarMensaje('Completá al menos el N° de OC y la Razón Social del proveedor.', 'error');
+    return;
+  }
+  if (carrito.some(c => !c.precioUnitario || c.precioUnitario <= 0)) {
+    if (!confirm('Hay ítems sin precio cargado (o en $0). ¿Continuar igual?')) return;
+  }
+
+  const requisitos = Array.from(document.querySelectorAll('.chk-requisito:checked')).map(c => c.value);
+
+  const data = {
+    numeroOC,
+    especialidad: document.getElementById('especialidad').value,
+    tipo: document.getElementById('tipoOC').value,
+    proveedorRazonSocial: provRazonSocial,
+    idProveedor: document.getElementById('provIdSeleccionado').value,
+    proveedorDomicilio: document.getElementById('provDomicilio').value,
+    proveedorTelefono: document.getElementById('provTelefono').value,
+    proveedorEmail: document.getElementById('provEmail').value,
+    proveedorContacto: document.getElementById('provContacto').value,
+    proveedorCargo: document.getElementById('provCargo').value,
+    moneda: document.getElementById('moneda').value,
+    condicionesPago: document.getElementById('condicionesPago').value,
+    plazoEntrega: document.getElementById('plazoEntrega').value,
+    formaEntrega: document.getElementById('formaEntrega').value,
+    descuentoPct: parseFloat(document.getElementById('descuentoPct').value) || 0,
+    bonificacionPct: parseFloat(document.getElementById('bonificacionPct').value) || 0,
+    nroPresupuesto: document.getElementById('nroPresupuesto').value,
+    confecciono: document.getElementById('confecciono').value,
+    autorizo: document.getElementById('autorizo').value,
+    ejecuto: document.getElementById('ejecuto').value,
+    requisitosCierre: requisitos,
+    observaciones: document.getElementById('observacionesOC').value,
+    items: carrito
+  };
+
+  const btn = document.getElementById('btnCrearOC');
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+
+  llamarAPI({ action: 'crearOC', data: data }).then(res => {
+    btn.disabled = false;
+    btn.textContent = 'Generar Orden de Compra';
+    if (res.ok) {
+      mostrarMensaje('OC ' + res.numeroOC + ' generada correctamente.', 'exito');
+      carrito = [];
+      renderCarrito();
+      cargarPedidos();
+    } else {
+      mostrarMensaje('Error: ' + res.error, 'error');
+    }
+  }).catch(err => {
+    btn.disabled = false;
+    btn.textContent = 'Generar Orden de Compra';
+    mostrarMensaje('Error de conexión: ' + err.message, 'error');
+  });
+}
+
+function mostrarMensaje(texto, tipo) {
+  const el = document.getElementById('mensaje');
+  el.textContent = texto;
+  el.className = tipo;
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+cargarPedidos();
+cargarEspecialidades();
+</script>
+</body>
+</html>
