@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuevo Pedido - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --verde: #2e7d32;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+  .container {
+    max-width: 720px;
+    margin: 24px auto;
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  fieldset {
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    margin-bottom: 18px;
+    padding: 16px;
+  }
+  legend {
+    font-weight: 600;
+    color: var(--azul-isl);
+    padding: 0 8px;
+    font-size: 14px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 10px;
+    color: #374151;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .urgencia-toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .urgencia-toggle button {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--borde);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .urgencia-toggle button.activo-si {
+    border-color: var(--rojo);
+    background: #fdecea;
+    color: var(--rojo);
+  }
+  .urgencia-toggle button.activo-no {
+    border-color: var(--verde);
+    background: #eaf6ea;
+    color: var(--verde);
+  }
+  .item-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    padding: 10px;
+    background: var(--azul-claro);
+    border-radius: 6px;
+    position: relative;
+  }
+  .item-row .desc-wrap { flex: 3; position: relative; }
+  .item-row .cant { flex: 1; }
+  .item-row .unidad { flex: 1; }
+  .item-row button.eliminar {
+    background: none;
+    border: none;
+    color: var(--rojo);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px 4px;
+  }
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    z-index: 10;
+    max-height: 180px;
+    overflow-y: auto;
+    display: none;
+  }
+  .autocomplete-list div {
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .autocomplete-list div:hover { background: var(--azul-claro); }
+  .catalogo-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--verde);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+  }
+  #btnAgregarItem {
+    background: none;
+    border: 1px dashed var(--azul-isl);
+    color: var(--azul-isl);
+    padding: 10px;
+    width: 100%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  #btnEnviar {
+    width: 100%;
+    background: var(--azul-isl);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  #btnEnviar:disabled { opacity: 0.6; cursor: not-allowed; }
+  #mensaje {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+  }
+  #mensaje.exito { background: #eaf6ea; color: var(--verde); display: block; }
+  #mensaje.error { background: #fdecea; color: var(--rojo); display: block; }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ISL · Gestor de Compras</h1>
+  <p>Nuevo Pedido de Materiales / Servicios</p>
+</header>
+
+<div class="container" style="max-width:1100px;">
+  <div class="tabs" style="display:flex; gap:8px; margin-bottom:16px;">
+    <button class="tab-btn" id="tabBtnNuevo" onclick="mostrarTab('nuevo')" style="padding:10px 18px; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; background:#1a3a6b; color:white;">Nuevo Pedido</button>
+    <button class="tab-btn" id="tabBtnListado" onclick="mostrarTab('listado')" style="padding:10px 18px; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; background:white; color:#1a3a6b;">Listado de Pedidos</button>
+    <button class="tab-btn" id="tabBtnItems" onclick="mostrarTab('items')" style="padding:10px 18px; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; background:white; color:#1a3a6b;">Todos los Ítems</button>
+  </div>
+
+  <div id="vistaNuevo">
+<div class="container" style="max-width:720px; margin:0; padding:0;">
+  <form id="formPedido">
+
+    <fieldset>
+      <legend>Datos generales</legend>
+
+      <label for="solicitante">Solicitante</label>
+      <input type="text" id="solicitante" required placeholder="Nombre y apellido">
+
+      <div class="row">
+        <div>
+          <label for="tipoCC">Tipo de centro de costo</label>
+          <select id="tipoCC" required>
+            <option value="">Seleccionar...</option>
+            <option value="Obra">Obra / Proyecto</option>
+            <option value="Establecimiento">Establecimiento propio</option>
+            <option value="Compra Externa">Compra Externa (personal)</option>
+          </select>
+        </div>
+        <div>
+          <label for="centroCosto">Centro de costo</label>
+          <select id="centroCosto" required disabled>
+            <option value="">Elegí primero el tipo...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="wrapCertificacion" class="oculto">
+        <label for="itemCertificacion">Ítem de certificación</label>
+        <select id="itemCertificacion">
+          <option value="">Seleccionar...</option>
+        </select>
+      </div>
+
+      <div id="wrapCategoria" class="oculto">
+        <label for="categoriaGasto">Categoría de gasto</label>
+        <select id="categoriaGasto">
+          <option value="">Seleccionar...</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="fechaNecesidad">Fecha de necesidad</label>
+          <input type="date" id="fechaNecesidad" required>
+        </div>
+        <div>
+          <label>Urgencia</label>
+          <div class="urgencia-toggle">
+            <button type="button" id="btnUrgenteSi" onclick="setUrgencia(true)">Urgente</button>
+            <button type="button" id="btnUrgenteNo" onclick="setUrgencia(false)">No urgente</button>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Materiales / servicios pedidos</legend>
+      <div id="listaItems"></div>
+      <button type="button" id="btnAgregarItem" onclick="agregarItem()">+ Agregar ítem</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Observaciones</legend>
+      <textarea id="observaciones" placeholder="Aclaraciones, marca preferida, contacto de referencia, etc."></textarea>
+    </fieldset>
+
+    <button type="submit" id="btnEnviar">Enviar pedido</button>
+    <div id="mensaje"></div>
+  </form>
+</div>
+  </div>
+
+  <div id="vistaListado" style="display:none;">
+    <div class="panel-tabla">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px;">
+        <div style="flex:1; min-width:140px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Estado</label>
+          <select id="fListadoEstado" style="width:100%; padding:9px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+            <option value="">Todos</option>
+            <option value="Nuevo">Nuevo</option>
+            <option value="En proceso">En proceso</option>
+          </select>
+        </div>
+        <div style="flex:1; min-width:140px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Urgencia</label>
+          <select id="fListadoUrgencia" style="width:100%; padding:9px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+            <option value="">Todas</option>
+            <option value="Si">Urgente</option>
+            <option value="No">No urgente</option>
+          </select>
+        </div>
+        <button onclick="cargarListadoPedidos()" style="background:#1a3a6b; color:white; border:none; padding:9px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;">Filtrar</button>
+      </div>
+      <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <thead style="background:#1a3a6b; color:white;">
+          <tr>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">N° Pedido</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Fecha</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Solicitante</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Centro de costo</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Urgencia</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyListadoPedidos">
+          <tr><td colspan="6" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="vistaTodosItems" style="display:none;">
+    <div class="panel-tabla">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px;">
+        <div style="flex:1; min-width:180px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Buscar</label>
+          <input type="text" id="fItemsTexto" placeholder="Descripción, N° pedido, N° OC, solicitante..." style="width:100%; padding:9px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+        </div>
+        <div style="flex:1; min-width:140px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Estado</label>
+          <select id="fItemsEstado" style="width:100%; padding:9px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+            <option value="">Todos</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Asignado a OC">Asignado a OC</option>
+            <option value="Asignado a PM">Asignado a PM</option>
+            <option value="Cubierto por stock">Cubierto por stock</option>
+            <option value="Anulado">Anulado</option>
+          </select>
+        </div>
+        <button onclick="cargarListadoItems()" style="background:#1a3a6b; color:white; border:none; padding:9px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;">Filtrar</button>
+      </div>
+      <table style="width:100%; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <thead style="background:#1a3a6b; color:white;">
+          <tr>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">N° Pedido</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Fecha Pedido</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Solicitante</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Descripción</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Cant.</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Fecha Necesidad</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Estado</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">N° OC</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Proveedor</th>
+            <th style="padding:12px 14px; text-align:left; font-size:13px;">Plazo Entrega</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyListadoItems">
+          <tr><td colspan="10" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHn09xBtZccaF1ziO5omhrCd1QvcLq093wE-sAQSG7TuYcNfWEJG_c64_81N_qUamXHw/exec';
+// ===================================================
+
+let urgenciaSeleccionada = null;
+let itemCounter = 0;
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+function setUrgencia(esUrgente) {
+  urgenciaSeleccionada = esUrgente;
+  document.getElementById('btnUrgenteSi').classList.toggle('activo-si', esUrgente === true);
+  document.getElementById('btnUrgenteNo').classList.toggle('activo-no', esUrgente === false);
+}
+
+// ---- Carga de centros de costo ----
+document.getElementById('tipoCC').addEventListener('change', function() {
+  const tipo = this.value;
+  const selectCC = document.getElementById('centroCosto');
+  document.getElementById('wrapCertificacion').classList.add('oculto');
+  document.getElementById('wrapCategoria').classList.add('oculto');
+  selectCC.innerHTML = '<option value="">Cargando...</option>';
+  selectCC.disabled = true;
+
+  if (!tipo) return;
+
+  llamarAPI({ action: 'listarCentrosCosto' }).then(res => {
+    if (!res.ok) return;
+    const filtrados = res.data.filter(cc => cc.Tipo === tipo);
+    selectCC.innerHTML = '<option value="">Seleccionar...</option>' +
+      filtrados.map(cc => `<option value="${cc.Nombre}" data-id="${cc.ID}">${cc.Nombre}</option>`).join('');
+    selectCC.disabled = false;
+
+    if (tipo === 'Establecimiento' || tipo === 'Compra Externa') {
+      cargarCategorias();
+      document.getElementById('wrapCategoria').classList.remove('oculto');
+    }
+  });
+});
+
+document.getElementById('centroCosto').addEventListener('change', function() {
+  const tipo = document.getElementById('tipoCC').value;
+  if (tipo !== 'Obra') return;
+  const opt = this.options[this.selectedIndex];
+  const centroCostoId = opt.getAttribute('data-id');
+  if (!centroCostoId) return;
+
+  llamarAPI({ action: 'listarItemsCertificacion', centroCostoId: centroCostoId }).then(res => {
+    if (!res.ok) return;
+    const select = document.getElementById('itemCertificacion');
+    select.innerHTML = '<option value="">Seleccionar...</option>' +
+      res.data.map(i => `<option value="${i.Descripcion}">${i.Descripcion}</option>`).join('');
+    document.getElementById('wrapCertificacion').classList.remove('oculto');
+  });
+});
+
+function cargarCategorias() {
+  llamarAPI({ action: 'listarCategoriasGasto' }).then(res => {
+    if (!res.ok) return;
+    const select = document.getElementById('categoriaGasto');
+    select.innerHTML = '<option value="">Seleccionar...</option>' +
+      res.data.map(c => `<option value="${c.Nombre}">${c.Nombre}</option>`).join('');
+  });
+}
+
+// ---- Ítems del pedido (con autocompletar contra catálogo) ----
+function agregarItem() {
+  itemCounter++;
+  const id = itemCounter;
+  const div = document.createElement('div');
+  div.className = 'item-row';
+  div.id = 'item-' + id;
+  div.innerHTML = `
+    <div class="desc-wrap">
+      <input type="text" placeholder="Descripción del material/servicio" class="item-desc" oninput="buscarEnCatalogo(${id}, this.value)" autocomplete="off">
+      <div class="autocomplete-list" id="auto-${id}"></div>
+      <input type="hidden" class="item-idcatalogo">
+    </div>
+    <div class="cant"><input type="number" min="0" step="any" placeholder="Cant." class="item-cant"></div>
+    <div class="unidad">
+      <select class="item-unidad">
+        <option value="Unidad">Unidad</option>
+        <option value="Kg">Kg</option>
+        <option value="Metro">Metro</option>
+        <option value="Litro">Litro</option>
+        <option value="Caja">Caja</option>
+        <option value="Global">Global</option>
+      </select>
+    </div>
+    <div class="foto-wrap" style="flex:0 0 auto; display:flex; align-items:center; gap:4px;">
+      <label style="margin:0; cursor:pointer; background:#eaf1fb; color:#1a3a6b; padding:8px 10px; border-radius:6px; font-size:18px; line-height:1;" title="Agregar foto">
+        📷
+        <input type="file" accept="image/*" capture="environment" class="item-foto-input" style="display:none;" onchange="procesarFoto(${id}, this.files[0])">
+      </label>
+      <img class="item-foto-preview" style="display:none; width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db;">
+      <input type="hidden" class="item-foto-base64">
+    </div>
+    <button type="button" class="eliminar" onclick="eliminarItem(${id})">&times;</button>
+  `;
+  document.getElementById('listaItems').appendChild(div);
+}
+
+// Comprime la foto en el navegador (máx. 1024px, JPEG 70%) antes de mandarla,
+// para que el pedido pese poco y viaje rápido incluso con mala señal en obra.
+function procesarFoto(id, file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      let w = img.width, h = img.height;
+      const maxDim = 1024;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      const base64 = dataUrl.split(',')[1];
+
+      const fila = document.getElementById('item-' + id);
+      fila.querySelector('.item-foto-base64').value = base64;
+      const preview = fila.querySelector('.item-foto-preview');
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function eliminarItem(id) {
+  const el = document.getElementById('item-' + id);
+  if (el) el.remove();
+}
+
+let timeoutBusqueda;
+function buscarEnCatalogo(id, texto) {
+  document.querySelector(`#item-${id} .item-idcatalogo`).value = '';
+  clearTimeout(timeoutBusqueda);
+  const lista = document.getElementById('auto-' + id);
+
+  if (texto.length < 3) {
+    lista.style.display = 'none';
+    return;
+  }
+
+  timeoutBusqueda = setTimeout(() => {
+    llamarAPI({ action: 'buscarCatalogo', texto: texto }).then(res => {
+      if (!res.ok || res.data.length === 0) {
+        lista.style.display = 'none';
+        return;
+      }
+      lista.innerHTML = res.data.map(item =>
+        `<div onclick="seleccionarCatalogo(${id}, '${item.ID_Catalogo}', '${item.Nomenclatura_ISL.replace(/'/g, "\\'")}', '${item.Unidad}')">
+          ${item.Nomenclatura_ISL} <span class="catalogo-tag">catálogo</span>
+        </div>`
+      ).join('');
+      lista.style.display = 'block';
+    });
+  }, 350);
+}
+
+function seleccionarCatalogo(id, idCatalogo, nombre, unidad) {
+  document.querySelector(`#item-${id} .item-desc`).value = nombre;
+  document.querySelector(`#item-${id} .item-idcatalogo`).value = idCatalogo;
+  document.querySelector(`#item-${id} .item-unidad`).value = unidad;
+  document.getElementById('auto-' + id).style.display = 'none';
+}
+
+// Cerrar listas de autocompletar al hacer click afuera
+document.addEventListener('click', function(e) {
+  if (!e.target.classList.contains('item-desc')) {
+    document.querySelectorAll('.autocomplete-list').forEach(l => l.style.display = 'none');
+  }
+});
+
+// ---- Envío del formulario ----
+document.getElementById('formPedido').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  if (urgenciaSeleccionada === null) {
+    mostrarMensaje('Indicá si el pedido es urgente o no.', 'error');
+    return;
+  }
+
+  const filas = document.querySelectorAll('.item-row');
+  if (filas.length === 0) {
+    mostrarMensaje('Agregá al menos un ítem al pedido.', 'error');
+    return;
+  }
+
+  const items = [];
+  for (const fila of filas) {
+    const descripcion = fila.querySelector('.item-desc').value.trim();
+    const cantidad = fila.querySelector('.item-cant').value;
+    const unidad = fila.querySelector('.item-unidad').value;
+    const idCatalogo = fila.querySelector('.item-idcatalogo').value;
+    const fotoBase64 = fila.querySelector('.item-foto-base64').value;
+    if (!descripcion || !cantidad) {
+      mostrarMensaje('Completá descripción y cantidad en todos los ítems.', 'error');
+      return;
+    }
+    items.push({ descripcion, cantidad, unidad, idCatalogo, fotoBase64 });
+  }
+
+  const tipoCC = document.getElementById('tipoCC').value;
+  const data = {
+    solicitante: document.getElementById('solicitante').value,
+    tipoCC: tipoCC,
+    centroCosto: document.getElementById('centroCosto').value,
+    itemCertificacion: tipoCC === 'Obra' ? document.getElementById('itemCertificacion').value : '',
+    categoriaGasto: (tipoCC === 'Establecimiento' || tipoCC === 'Compra Externa') ? document.getElementById('categoriaGasto').value : '',
+    fechaNecesidad: document.getElementById('fechaNecesidad').value,
+    urgencia: urgenciaSeleccionada ? 'Si' : 'No',
+    observaciones: document.getElementById('observaciones').value,
+    items: items
+  };
+
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  // POST en vez de GET: las fotos en base64 no entran en el límite de largo de una URL.
+  // text/plain evita el preflight de CORS, igual que el patrón ?payload= usado en el resto de la app.
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'crearPedido', data: data })
+  }).then(r => r.json()).then(res => {
+    btn.disabled = false;
+    btn.textContent = 'Enviar pedido';
+    if (res.ok) {
+      mostrarMensaje('Pedido enviado correctamente. Número: ' + res.idPedido, 'exito');
+      document.getElementById('formPedido').reset();
+      document.getElementById('listaItems').innerHTML = '';
+      setUrgencia(null);
+    } else {
+      mostrarMensaje('Error: ' + res.error, 'error');
+    }
+  }).catch(err => {
+    btn.disabled = false;
+    btn.textContent = 'Enviar pedido';
+    mostrarMensaje('Error de conexión: ' + err.message, 'error');
+  });
+});
+
+function mostrarMensaje(texto, tipo) {
+  const el = document.getElementById('mensaje');
+  el.textContent = texto;
+  el.className = tipo;
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Arrancar con un ítem vacío
+// ================= Solapas: Listado de Pedidos / Todos los Ítems =================
+
+function formatFecha(fechaStr) {
+  const d = new Date(fechaStr);
+  if (isNaN(d)) return fechaStr || '-';
+  return d.toLocaleDateString('es-AR');
+}
+
+function badgeEstado(estado) {
+  const colores = {
+    'Nuevo': ['#fff4e5', '#d97706'],
+    'En proceso': ['#eaf1fb', '#1a3a6b'],
+    'Pendiente': ['#fff4e5', '#d97706'],
+    'Asignado a OC': ['#eaf1fb', '#1a3a6b'],
+    'Asignado a PM': ['#eaf1fb', '#1a3a6b'],
+    'Cubierto por stock': ['#e8eaf6', '#3949ab'],
+    'Anulado': ['#f5f5f5', '#757575']
+  };
+  const [bg, color] = colores[estado] || ['#eee', '#555'];
+  return `<span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; background:${bg}; color:${color};">${estado}</span>`;
+}
+
+let listadoPedidosCargado = false;
+let listadoItemsCargado = false;
+
+function mostrarTab(nombre) {
+  document.getElementById('vistaNuevo').style.display = nombre === 'nuevo' ? 'block' : 'none';
+  document.getElementById('vistaListado').style.display = nombre === 'listado' ? 'block' : 'none';
+  document.getElementById('vistaTodosItems').style.display = nombre === 'items' ? 'block' : 'none';
+
+  const botones = { nuevo: 'tabBtnNuevo', listado: 'tabBtnListado', items: 'tabBtnItems' };
+  Object.keys(botones).forEach(key => {
+    const btn = document.getElementById(botones[key]);
+    btn.style.background = key === nombre ? '#1a3a6b' : 'white';
+    btn.style.color = key === nombre ? 'white' : '#1a3a6b';
+  });
+
+  if (nombre === 'listado' && !listadoPedidosCargado) {
+    listadoPedidosCargado = true;
+    cargarListadoPedidos();
+  }
+  if (nombre === 'items' && !listadoItemsCargado) {
+    listadoItemsCargado = true;
+    cargarListadoItems();
+  }
+}
+
+function cargarListadoPedidos() {
+  const tbody = document.getElementById('tbodyListadoPedidos');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">Cargando...</td></tr>';
+
+  const filtros = {
+    estado: document.getElementById('fListadoEstado').value,
+    urgencia: document.getElementById('fListadoUrgencia').value
+  };
+
+  llamarAPI({ action: 'listarPedidos', filtros: filtros }).then(res => {
+    if (!res.ok) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#c0392b; font-size:13px;">Error: ' + res.error + '</td></tr>';
+      return;
+    }
+    if (res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">No hay pedidos que coincidan con el filtro.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.data.map(p => `
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:12px 14px; font-size:13px;"><strong>${p.ID_Pedido}</strong></td>
+        <td style="padding:12px 14px; font-size:13px;">${formatFecha(p.Fecha_Pedido)}</td>
+        <td style="padding:12px 14px; font-size:13px;">${p.Solicitante}</td>
+        <td style="padding:12px 14px; font-size:13px;">${p.Centro_Costo}</td>
+        <td style="padding:12px 14px; font-size:13px;">${p.Urgencia === 'Si' ? 'Urgente' : 'Normal'}</td>
+        <td style="padding:12px 14px; font-size:13px;">${badgeEstado(p.Estado)}</td>
+      </tr>
+    `).join('');
+  });
+}
+
+function cargarListadoItems() {
+  const tbody = document.getElementById('tbodyListadoItems');
+  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">Cargando...</td></tr>';
+
+  const filtros = {
+    texto: document.getElementById('fItemsTexto').value,
+    estado: document.getElementById('fItemsEstado').value
+  };
+
+  llamarAPI({ action: 'listarTodosLosItems', filtros: filtros }).then(res => {
+    if (!res.ok) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px; color:#c0392b; font-size:13px;">Error: ' + res.error + '</td></tr>';
+      return;
+    }
+    if (res.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px; color:#6b7280; font-size:13px;">No hay ítems que coincidan con el filtro.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = res.data.map(i => `
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:12px 14px; font-size:13px;"><strong>${i.ID_Pedido}</strong></td>
+        <td style="padding:12px 14px; font-size:13px;">${formatFecha(i.Fecha_Pedido)}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Solicitante || '-'}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Descripcion}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Cantidad} ${i.Unidad}</td>
+        <td style="padding:12px 14px; font-size:13px;">${formatFecha(i.Fecha_Necesidad)}</td>
+        <td style="padding:12px 14px; font-size:13px;">${badgeEstado(i.Estado_Item)}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Numero_OC || '-'}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Proveedor || '-'}</td>
+        <td style="padding:12px 14px; font-size:13px;">${i.Plazo_Entrega || '-'}</td>
+      </tr>
+    `).join('');
+  });
+}
+
+mostrarTab('nuevo');
+agregarItem();
+</script>
+</body>
+</html>
