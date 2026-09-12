@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ISL Compras</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a3a6b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compras ISL">
+<style>
+  :root { --azul-isl: #1a3a6b; --gris: #6b7280; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--azul-isl);
+    overscroll-behavior: none;
+  }
+  .top {
+    text-align: center;
+    padding: 40px 20px 20px;
+    color: white;
+  }
+  .top img { height: 60px; background: white; padding: 8px 14px; border-radius: 12px; }
+  .top h1 { font-size: 18px; margin: 14px 0 2px; }
+  .top p { font-size: 12px; opacity: 0.8; margin: 0; }
+
+  .sheet {
+    background: #f4f6f9;
+    border-radius: 24px 24px 0 0;
+    min-height: 60vh;
+    padding: 26px 20px 40px;
+  }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .card:active { transform: scale(0.98); }
+  .card .icono {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex: 0 0 auto;
+  }
+  .card .texto { flex: 1; }
+  .card .titulo { font-size: 15px; font-weight: 700; color: var(--azul-isl); }
+  .card .desc { font-size: 12px; color: var(--gris); margin-top: 2px; }
+  .card .flecha { color: #c7d0da; font-size: 20px; }
+
+  .bg-pedido { background: #eaf1fb; }
+  .bg-listado { background: #fff4e5; }
+  .bg-recepcion { background: #eaf6ea; }
+
+  footer { text-align: center; font-size: 11px; color: var(--gris); margin-top: 20px; }
+
+  #pantallaCandado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 30px 24px;
+    text-align: center;
+  }
+  #pantallaCandado .candado { font-size: 40px; margin-bottom: 10px; }
+  #pantallaCandado h2 { color: white; font-size: 17px; margin: 0 0 4px; }
+  #pantallaCandado p { color: rgba(255,255,255,0.75); font-size: 13px; margin: 0 0 20px; }
+  #pantallaCandado input {
+    width: 100%;
+    max-width: 240px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    font-size: 20px;
+    text-align: center;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+  }
+  #pantallaCandado button {
+    width: 100%;
+    max-width: 240px;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: white;
+    color: var(--azul-isl);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #errorCandado { color: #ffb4b4; font-size: 12px; margin-top: 10px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<div id="pantallaCandado">
+  <div class="candado">🔒</div>
+  <h2>Acceso restringido</h2>
+  <p>Ingresá el código para usuarios autorizados a pedir</p>
+  <input type="password" inputmode="numeric" id="inputClave" placeholder="Código" maxlength="10">
+  <button onclick="intentarAcceso()">Ingresar</button>
+  <div id="errorCandado"></div>
+</div>
+
+<div id="contenidoApp" style="display:none;">
+
+<div class="top">
+  <img src="icon-192.png" alt="ISL">
+  <h1>Gestor de Compras</h1>
+  <p>Instrumental San Lorenzo</p>
+</div>
+
+<div class="sheet">
+
+  <a class="card" href="pedido.html?tab=nuevo">
+    <div class="icono bg-pedido">📝</div>
+    <div class="texto">
+      <div class="titulo">Nuevo Pedido</div>
+      <div class="desc">Pedir materiales o servicios, con foto</div>
+    </div>
+    <div class="flecha">›</div>
+  </a>
+
+  <a class="card" href="pedido.html?tab=listado">
+    <div class="icono bg-listado">📋</div>
+    <div class="texto">
+      <div class="titulo">Listado de Pedidos</div>
+      <div class="desc">Ver el estado de los pedidos cargados</div>
+    </div>
+    <div class="flecha">›</div>
+  </a>
+
+  <a class="card" href="recepcion-lista.html">
+    <div class="icono bg-recepcion">📦</div>
+    <div class="texto">
+      <div class="titulo">Recepción de Mercadería</div>
+      <div class="desc">Registrar lo que llegó de una OC o PM</div>
+    </div>
+    <div class="flecha">›</div>
+  </a>
+
+  <footer>Instrumental San Lorenzo S.R.L.</footer>
+</div>
+</div>
+
+<script src="auth-gate.js"></script>
+<script>
+if (islAccesoAutorizado()) {
+  document.getElementById('pantallaCandado').style.display = 'none';
+  document.getElementById('contenidoApp').style.display = 'block';
+}
+
+function intentarAcceso() {
+  const valor = document.getElementById('inputClave').value.trim();
+  if (valor === ISL_ACCESS_CODE) {
+    islOtorgarAcceso();
+    document.getElementById('pantallaCandado').style.display = 'none';
+    document.getElementById('contenidoApp').style.display = 'block';
+  } else {
+    document.getElementById('errorCandado').textContent = 'Código incorrecto.';
+  }
+}
+
+document.getElementById('inputClave').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') intentarAcceso();
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(function(){});
+}
+</script>
+</body>
+</html>
