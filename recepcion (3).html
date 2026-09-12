@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="mayusculas-auto.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a3a6b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Recepción de Mercadería - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --verde: #2e7d32;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .container { max-width: 640px; margin: 20px auto; padding: 0 16px; }
+
+  .panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 16px; color: var(--azul-isl); }
+  .panel .subtitulo { font-size: 13px; color: var(--gris); margin-bottom: 14px; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 12px 0 4px;
+    color: #374151;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+
+  .item-recepcion {
+    background: var(--azul-claro);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .item-recepcion .desc { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .item-recepcion .pedida { font-size: 12px; color: var(--gris); margin-bottom: 8px; }
+  .item-recepcion .ya-recibido { font-size: 12px; color: var(--verde); margin-bottom: 8px; }
+  .item-recepcion .fila-cant { display: flex; align-items: center; gap: 8px; }
+  .item-recepcion .fila-cant input { flex: 0 0 100px; }
+  .item-recepcion .fila-cant span { font-size: 13px; color: #374151; }
+
+  .foto-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .foto-wrap label.btn-foto {
+    margin: 0;
+    cursor: pointer;
+    background: var(--azul-claro);
+    color: var(--azul-isl);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .foto-preview {
+    width: 60px; height: 60px; object-fit: cover; border-radius: 6px;
+    border: 1px solid var(--borde); display: none;
+  }
+
+  #btnConfirmar {
+    width: 100%;
+    background: var(--azul-isl);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  #btnConfirmar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  #mensaje {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+  }
+  #mensaje.exito { background: #eaf6ea; color: var(--verde); display: block; }
+  #mensaje.error { background: #fdecea; color: var(--rojo); display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ISL · Gestor de Compras</h1>
+  <p>Recepción de Mercadería</p>
+</header>
+
+<div class="container">
+  <div class="panel" id="panelDoc">
+    <h2 id="tituloDoc">Cargando...</h2>
+    <div class="subtitulo" id="subtituloDoc"></div>
+  </div>
+
+  <div class="panel">
+    <label>Lugar de recepción</label>
+    <select id="lugar">
+      <option value="Taller ISL">Taller ISL</option>
+      <option value="Obra">Obra</option>
+      <option value="Taller del proveedor">Taller del proveedor</option>
+      <option value="Taller externo de procesamiento">Taller externo de procesamiento</option>
+    </select>
+
+    <label>Quién recibe</label>
+    <input type="text" id="receptor" placeholder="Nombre de quien recibe">
+
+    <label>N° de Remito</label>
+    <input type="text" id="remitoNumero" placeholder="Número de remito del proveedor">
+
+    <label>Foto del remito</label>
+    <div class="foto-wrap">
+      <label class="btn-foto">
+        📷 Sacar / elegir foto
+        <input type="file" accept="image/*" capture="environment" id="remitoFotoInput" style="display:none;" onchange="procesarFotoRemito(this.files[0])">
+      </label>
+      <img class="foto-preview" id="remitoFotoPreview">
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Cantidad recibida por ítem</h2>
+    <div id="listaItems"><p style="color:#6b7280;font-size:13px;">Cargando ítems...</p></div>
+  </div>
+
+  <div class="panel">
+    <label>Observaciones</label>
+    <textarea id="observaciones" placeholder="Ej: vino dañado, faltan 2 unidades, etc."></textarea>
+    <button id="btnConfirmar" onclick="confirmarRecepcion()">Confirmar recepción</button>
+    <div id="mensaje"></div>
+  </div>
+</div>
+
+<script src="auth-gate.js"></script>
+<script>islExigirAcceso();</script>
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHn09xBtZccaF1ziO5omhrCd1QvcLq093wE-sAQSG7TuYcNfWEJG_c64_81N_qUamXHw/exec';
+// ===================================================
+
+const params = new URLSearchParams(window.location.search);
+const tipo = params.get('tipo'); // 'OC' | 'PM'
+const idDocumento = params.get('id');
+
+let itemsDocumento = [];
+let recibidoAcumuladoPorItem = {};
+let remitoFotoBase64 = '';
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+if (!tipo || !idDocumento) {
+  document.getElementById('tituloDoc').textContent = 'Falta información';
+  document.getElementById('subtituloDoc').textContent = 'Esta pantalla necesita abrirse desde el botón "Recibir mercadería" de una OC o PM.';
+} else {
+  cargarDocumento();
+}
+
+function cargarDocumento() {
+  const accionDoc = tipo === 'OC' ? 'obtenerOC' : 'obtenerPM';
+  const idParam = tipo === 'OC' ? { idOC: idDocumento } : { idPM: idDocumento };
+
+  Promise.all([
+    llamarAPI(Object.assign({ action: accionDoc }, idParam)),
+    llamarAPI({ action: 'listarRecepcionesDeDocumento', tipo: tipo, idDocumento: idDocumento })
+  ]).then(([resDoc, resRec]) => {
+    if (!resDoc.ok) {
+      document.getElementById('tituloDoc').textContent = 'Error';
+      document.getElementById('subtituloDoc').textContent = resDoc.error;
+      return;
+    }
+
+    const doc = tipo === 'OC' ? resDoc.data.oc : resDoc.data.pm;
+    itemsDocumento = resDoc.data.items;
+    const numero = tipo === 'OC' ? doc.Numero_OC : doc.Numero_PM;
+
+    document.getElementById('tituloDoc').textContent = (tipo === 'OC' ? 'OC ' : 'PM ') + numero;
+    document.getElementById('subtituloDoc').textContent = doc.Proveedor_RazonSocial || '';
+
+    // Acumular lo ya recibido en recepciones anteriores, por N_Item
+    recibidoAcumuladoPorItem = {};
+    if (resRec.ok) {
+      resRec.data.items.forEach(ri => {
+        const n = ri.N_Item;
+        recibidoAcumuladoPorItem[n] = (recibidoAcumuladoPorItem[n] || 0) + Number(ri.Cantidad_Recibida || 0);
+      });
+    }
+
+    renderItems();
+  });
+}
+
+function renderItems() {
+  const cont = document.getElementById('listaItems');
+  cont.innerHTML = itemsDocumento.map(item => {
+    const yaRecibido = recibidoAcumuladoPorItem[item.N_Item] || 0;
+    const pendiente = Math.max(0, Number(item.Cantidad) - yaRecibido);
+    return `
+      <div class="item-recepcion">
+        <div class="desc">${item.Descripcion}</div>
+        <div class="pedida">Pedido: ${item.Cantidad} ${item.Unidad}</div>
+        ${yaRecibido > 0 ? `<div class="ya-recibido">Ya recibido antes: ${yaRecibido} ${item.Unidad}</div>` : ''}
+        <div class="fila-cant">
+          <input type="number" min="0" step="any" class="input-cant-recibida" data-nitem="${item.N_Item}" value="${pendiente}">
+          <span>${item.Unidad} recibidos ahora</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function procesarFotoRemito(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      let w = img.width, h = img.height;
+      const maxDim = 1024;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      remitoFotoBase64 = dataUrl.split(',')[1];
+
+      const preview = document.getElementById('remitoFotoPreview');
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function confirmarRecepcion() {
+  const items = Array.from(document.querySelectorAll('.input-cant-recibida')).map(inp => ({
+    nItem: inp.getAttribute('data-nitem'),
+    cantidadRecibida: parseFloat(inp.value) || 0
+  }));
+
+  if (items.every(i => i.cantidadRecibida === 0)) {
+    mostrarMensaje('Cargá al menos una cantidad recibida mayor a 0.', 'error');
+    return;
+  }
+
+  const data = {
+    tipo: tipo,
+    idDocumento: idDocumento,
+    lugar: document.getElementById('lugar').value,
+    receptor: document.getElementById('receptor').value,
+    remitoNumero: document.getElementById('remitoNumero').value,
+    remitoFotoBase64: remitoFotoBase64,
+    observaciones: document.getElementById('observaciones').value,
+    items: items
+  };
+
+  const btn = document.getElementById('btnConfirmar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  // POST (no GET) porque puede incluir la foto del remito en base64.
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'registrarRecepcion', data: data })
+  }).then(r => r.json()).then(res => {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar recepción';
+    if (res.ok) {
+      mostrarMensaje('Recepción registrada correctamente.', 'exito');
+      cargarDocumento();
+      document.getElementById('remitoNumero').value = '';
+      document.getElementById('observaciones').value = '';
+      remitoFotoBase64 = '';
+      document.getElementById('remitoFotoPreview').style.display = 'none';
+    } else {
+      mostrarMensaje('Error: ' + res.error, 'error');
+    }
+  }).catch(err => {
+    btn.disabled = false;
+    btn.textContent = 'Confirmar recepción';
+    mostrarMensaje('Error de conexión: ' + err.message, 'error');
+  });
+}
+
+function mostrarMensaje(texto, tipoMsg) {
+  const el = document.getElementById('mensaje');
+  el.textContent = texto;
+  el.className = tipoMsg;
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
