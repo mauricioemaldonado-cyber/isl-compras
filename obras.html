@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a3a6b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="mayusculas-auto.js"></script>
+<title>Obras y Centros de Costo - ISL Compras</title>
+<style>
+  :root {
+    --azul-isl: #1a3a6b;
+    --azul-claro: #eaf1fb;
+    --gris: #6b7280;
+    --rojo: #c0392b;
+    --verde: #2e7d32;
+    --naranja: #d97706;
+    --morado: #6d28d9;
+    --borde: #d1d5db;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    color: #1f2937;
+  }
+  header {
+    background: var(--azul-isl);
+    color: white;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
+  header a {
+    background: white; color: var(--azul-isl); padding: 9px 16px;
+    border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; margin-left: 8px;
+  }
+
+  .layout {
+    display: flex; gap: 16px; max-width: 1100px; margin: 20px auto; padding: 0 16px; align-items: flex-start;
+  }
+  .col-lista { flex: 1.4; }
+  .col-form { flex: 1; position: sticky; top: 16px; }
+
+  .panel {
+    background: white; border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 15px; color: var(--azul-isl); }
+
+  input, select, textarea {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--borde); border-radius: 6px; font-size: 13px; font-family: inherit;
+  }
+  label { display: block; font-size: 12px; font-weight: 600; margin: 10px 0 4px; color: #374151; }
+
+  .buscador { margin-bottom: 12px; }
+
+  #btnGuardar, #btnAgregarItem {
+    width: 100%; background: var(--azul-isl); color: white; border: none; padding: 12px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px;
+  }
+  #mensaje, #mensajeItem { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; }
+  #mensaje.exito, #mensajeItem.exito { background: #eaf6ea; color: var(--verde); display: block; }
+  #mensaje.error, #mensajeItem.error { background: #fdecea; color: var(--rojo); display: block; }
+
+  .badge {
+    display: inline-block; padding: 2px 9px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; margin-left: 8px;
+  }
+  .badge-obra { background: var(--azul-claro); color: var(--azul-isl); }
+  .badge-establecimiento { background: #fff4e5; color: var(--naranja); }
+  .badge-externa { background: #e8eaf6; color: var(--morado); }
+
+  .tarjeta-centro {
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .tarjeta-centro .cabecera {
+    padding: 12px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafbfc;
+  }
+  .tarjeta-centro .cabecera .nombre { font-weight: 600; font-size: 14px; }
+  .tarjeta-centro .cabecera .cliente { font-size: 12px; color: var(--gris); margin-top: 2px; }
+  .tarjeta-centro .cuerpo {
+    padding: 10px 14px 14px;
+    display: none;
+    border-top: 1px solid var(--borde);
+  }
+  .tarjeta-centro .cuerpo.abierto { display: block; }
+
+  .item-cert {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+  }
+  .item-cert:last-child { border-bottom: none; }
+
+  .sin-items { color: var(--gris); font-size: 12px; font-style: italic; padding: 6px 0; }
+
+  .form-item-inline {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .form-item-inline input { flex: 1; }
+  .form-item-inline button {
+    background: var(--verde); color: white; border: none; padding: 0 16px;
+    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap;
+  }
+
+  .vacio { text-align: center; padding: 30px; color: var(--gris); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>ISL · Gestor de Compras</h1>
+    <p>Obras y Centros de Costo</p>
+  </div>
+  <div>
+    <a href="hub.html">🏠 Inicio</a>
+    <a href="bandeja.html">Bandeja</a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="col-lista">
+    <div class="panel">
+      <h2>Centros de costo cargados</h2>
+      <input type="text" class="buscador" id="buscador" placeholder="Buscar por nombre...">
+      <div id="listaCentros"><p style="color:#6b7280;font-size:13px;">Cargando...</p></div>
+    </div>
+  </div>
+
+  <div class="col-form">
+    <div class="panel">
+      <h2>Nueva Obra / Centro de Costo</h2>
+      <label>Tipo</label>
+      <select id="tipo">
+        <option value="Obra">Obra / Proyecto</option>
+        <option value="Establecimiento">Establecimiento propio</option>
+        <option value="Compra Externa">Compra Externa (personal)</option>
+      </select>
+
+      <label>Nombre</label>
+      <input type="text" id="nombre" placeholder="Ej: YPF Terminal San Lorenzo">
+
+      <div id="wrapCliente">
+        <label>Cliente (si es Obra)</label>
+        <input type="text" id="cliente" placeholder="Ej: YPF">
+      </div>
+
+      <button id="btnGuardar" onclick="crearCentro()">Agregar</button>
+      <div id="mensaje"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwHn09xBtZccaF1ziO5omhrCd1QvcLq093wE-sAQSG7TuYcNfWEJG_c64_81N_qUamXHw/exec';
+// ===================================================
+
+let centrosData = [];
+
+function llamarAPI(payload) {
+  const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  return fetch(url).then(r => r.json());
+}
+
+function cargarCentros() {
+  llamarAPI({ action: 'listarCentrosCostoConItems' }).then(res => {
+    if (!res.ok) {
+      document.getElementById('listaCentros').innerHTML = '<p class="vacio">Error: ' + res.error + '</p>';
+      return;
+    }
+    centrosData = res.data;
+    renderLista(centrosData);
+  });
+}
+
+function claseBadge(tipo) {
+  if (tipo === 'Obra') return 'badge-obra';
+  if (tipo === 'Establecimiento') return 'badge-establecimiento';
+  return 'badge-externa';
+}
+
+function renderLista(lista) {
+  const cont = document.getElementById('listaCentros');
+  if (lista.length === 0) {
+    cont.innerHTML = '<p class="vacio">Todavía no hay centros de costo cargados.</p>';
+    return;
+  }
+
+  cont.innerHTML = lista.map((c, idx) => `
+    <div class="tarjeta-centro">
+      <div class="cabecera" onclick="toggleTarjeta(${idx})">
+        <div>
+          <span class="nombre">${c.Nombre}</span>
+          <span class="badge ${claseBadge(c.Tipo)}">${c.Tipo}</span>
+          ${c.Cliente ? `<div class="cliente">Cliente: ${c.Cliente}</div>` : ''}
+        </div>
+        <div style="color:#6b7280; font-size:12px;">${c.Tipo === 'Obra' ? (c.items.length + ' ítem(s) de certificación') : ''}</div>
+      </div>
+      ${c.Tipo === 'Obra' ? `
+        <div class="cuerpo" id="cuerpo-${idx}">
+          ${c.items.length === 0
+            ? '<div class="sin-items">Todavía no tiene ítems de certificación cargados.</div>'
+            : c.items.map(i => `<div class="item-cert">${i.Descripcion}</div>`).join('')
+          }
+          <div class="form-item-inline">
+            <input type="text" id="nuevoItem-${idx}" placeholder="Nuevo ítem de certificación...">
+            <button onclick="agregarItemCertificacion(${idx}, '${c.ID}')">+ Agregar</button>
+          </div>
+          <div id="mensajeItem-${idx}"></div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function toggleTarjeta(idx) {
+  const el = document.getElementById('cuerpo-' + idx);
+  if (el) el.classList.toggle('abierto');
+}
+
+document.getElementById('buscador').addEventListener('input', function() {
+  const t = this.value.toLowerCase();
+  renderLista(centrosData.filter(c => String(c.Nombre).toLowerCase().includes(t)));
+});
+
+document.getElementById('tipo').addEventListener('change', function() {
+  document.getElementById('wrapCliente').style.display = this.value === 'Obra' ? 'block' : 'none';
+});
+
+function crearCentro() {
+  const nombre = document.getElementById('nombre').value.trim();
+  const tipo = document.getElementById('tipo').value;
+  if (!nombre) {
+    mostrarMensaje('El nombre es obligatorio.', 'error');
+    return;
+  }
+
+  const data = {
+    nombre: nombre,
+    tipo: tipo,
+    cliente: tipo === 'Obra' ? document.getElementById('cliente').value : ''
+  };
+
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  llamarAPI({ action: 'crearCentroCosto', data: data }).then(res => {
+    btn.disabled = false;
+    btn.textContent = 'Agregar';
+    if (res.ok) {
+      mostrarMensaje('Agregado correctamente.', 'exito');
+      document.getElementById('nombre').value = '';
+      document.getElementById('cliente').value = '';
+      cargarCentros();
+    } else {
+      mostrarMensaje('Error: ' + res.error, 'error');
+    }
+  }).catch(err => {
+    btn.disabled = false;
+    btn.textContent = 'Agregar';
+    mostrarMensaje('Error de conexión: ' + err.message, 'error');
+  });
+}
+
+function agregarItemCertificacion(idx, centroCostoId) {
+  const input = document.getElementById('nuevoItem-' + idx);
+  const descripcion = input.value.trim();
+  if (!descripcion) return;
+
+  llamarAPI({ action: 'crearItemCertificacion', data: { centroCostoId: centroCostoId, descripcion: descripcion } }).then(res => {
+    const msgEl = document.getElementById('mensajeItem-' + idx);
+    if (res.ok) {
+      input.value = '';
+      cargarCentros();
+      // Como cargarCentros() vuelve a dibujar todo, reabrimos la tarjeta para que no se sienta que "desaparece".
+      setTimeout(() => {
+        const el = document.getElementById('cuerpo-' + idx);
+        if (el) el.classList.add('abierto');
+      }, 50);
+    } else {
+      if (msgEl) { msgEl.textContent = 'Error: ' + res.error; msgEl.className = 'error'; }
+    }
+  });
+}
+
+function mostrarMensaje(texto, tipo) {
+  const el = document.getElementById('mensaje');
+  el.textContent = texto;
+  el.className = tipo;
+}
+
+cargarCentros();
+</script>
+</body>
+</html>
