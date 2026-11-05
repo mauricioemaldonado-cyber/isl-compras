@@ -121,10 +121,10 @@ Promise.all([
   llamarAPI({ action: 'listarOC', filtros: {} }),
   llamarAPI({ action: 'listarPM', filtros: {} })
 ]).then(([resOC, resPM]) => {
-  const ocs = (resOC.ok ? resOC.data : []).map(o => ({
+  const ocs = (resOC.ok ? resOC.data : []).filter(o => o.Estado !== 'Anulada').map(o => ({
     tipo: 'OC', id: o.ID_OC, numero: o.Numero_OC, proveedor: o.Proveedor_RazonSocial, fecha: o.Fecha
   }));
-  const pms = (resPM.ok ? resPM.data : []).map(p => ({
+  const pms = (resPM.ok ? resPM.data : []).filter(p => p.Estado !== 'Anulado').map(p => ({
     tipo: 'PM', id: p.ID_PM, numero: p.Numero_PM, proveedor: p.Proveedor_RazonSocial, fecha: p.Fecha
   }));
 
