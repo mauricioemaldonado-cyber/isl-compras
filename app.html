@@ -106,17 +106,9 @@
 </style>
 </head>
 <body>
+<script src="auth-gate.js" data-app="Pedidos" data-name="Gestor de Compras"></script>
 
-<div id="pantallaCandado">
-  <div class="candado">🔒</div>
-  <h2>Acceso restringido</h2>
-  <p>Ingresá el código para usuarios autorizados a pedir</p>
-  <input type="password" inputmode="numeric" id="inputClave" placeholder="Código" maxlength="10">
-  <button onclick="intentarAcceso()">Ingresar</button>
-  <div id="errorCandado"></div>
-</div>
-
-<div id="contenidoApp" style="display:none;">
+<div id="contenidoApp">
 
 <div class="top">
   <img src="icon-192.png" alt="ISL">
@@ -157,28 +149,7 @@
 </div>
 </div>
 
-<script src="auth-gate.js"></script>
 <script>
-if (islAccesoAutorizado()) {
-  document.getElementById('pantallaCandado').style.display = 'none';
-  document.getElementById('contenidoApp').style.display = 'block';
-}
-
-function intentarAcceso() {
-  const valor = document.getElementById('inputClave').value.trim();
-  if (valor === ISL_ACCESS_CODE) {
-    islOtorgarAcceso();
-    document.getElementById('pantallaCandado').style.display = 'none';
-    document.getElementById('contenidoApp').style.display = 'block';
-  } else {
-    document.getElementById('errorCandado').textContent = 'Código incorrecto.';
-  }
-}
-
-document.getElementById('inputClave').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') intentarAcceso();
-});
-
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js').catch(function(){});
 }
